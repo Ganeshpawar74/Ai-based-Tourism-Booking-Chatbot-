@@ -39,7 +39,7 @@ class Config:
     RAZORPAY_WEBHOOK_SECRET = os.getenv('RAZORPAY_WEBHOOK_SECRET', '')
     
     # Payment Settings
-    DEFAULT_TICKET_PRICE = float(os.getenv('DEFAULT_TICKET_PRICE', 500))  # In INR
+    DEFAULT_TICKET_PRICE = float(os.getenv('DEFAULT_TICKET_PRICE', 1))  # In INR
     MIN_BOOKING_AMOUNT = float(os.getenv('MIN_BOOKING_AMOUNT', 100))      # In INR
     MAX_BOOKING_AMOUNT = float(os.getenv('MAX_BOOKING_AMOUNT', 100000))   # In INR
     

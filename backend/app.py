@@ -13,7 +13,7 @@ from datetime import datetime
 # Direct import from tourist database - NO Gemini API
 from tourist_database import find_city_by_name, get_formatted_places_response, get_place_details, TOURIST_PLACES_DB
 from payment import create_razorpay_order, verify_payment_signature
-from ticket_generator import generate_ticket
+from ticket_generator import generate_ticket, generate_qr_code_base64
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG)
@@ -240,7 +240,7 @@ def booking_summary():
         time_slot = data.get('time_slot', '')
         date = data.get('date', '')
         num_tickets = data.get('num_tickets', 1)
-        ticket_price = data.get('ticket_price', 500)
+        ticket_price = data.get('ticket_price', 1)
         
         # Calculate total
         total_price = int(ticket_price) * int(num_tickets)
@@ -454,71 +454,91 @@ def verify_payment():
         if is_valid:
             logger.info("✅ Signature verification successful!")
             
-            # Update booking with payment info
-            if booking_id:
-                try:
-                    # Load bookings and update with payment info
-                    bookings_file = os.path.join(os.path.dirname(__file__), 'bookings.json')
-                    with open(bookings_file, 'r') as f:
-                        bookings = json.load(f)
-                    
-                    if booking_id in bookings:
-                        bookings[booking_id]["order_id"] = razorpay_order_id
-                        bookings[booking_id]["payment_id"] = razorpay_payment_id
-                        bookings[booking_id]["payment_status"] = "completed"
-                        
-                        with open(bookings_file, 'w') as f:
-                            json.dump(bookings, f, indent=2)
-                        
-                        logger.info(f"✅ Booking payment info saved: {booking_id}")
-                except Exception as update_error:
-                    logger.warning(f"Could not update booking payment: {str(update_error)}")
-            
-            # Generate ticket
+            # Generate QR code with booking details passed from frontend
+            qr_code_data = None
             try:
-                if booking_id:
-                    # Load booking from file
+                # Get booking details from request
+                name = data.get('name', 'Guest')
+                email = data.get('email', '')
+                phone = data.get('phone', '')
+                place = data.get('place', 'Tourism Place')
+                city = data.get('city', '')
+                time_slot = data.get('time', '')
+                date = data.get('date', '')
+                tickets = data.get('tickets', 1)
+                total_amount = data.get('total_amount', 0)
+                
+                # Create QR code data string with all booking information
+                qr_data = f"""BOOKING TICKET
+Ticket ID: {booking_id}
+━━━━━━━━━━━━━━━━━
+Name: {name}
+Email: {email}
+Phone: {phone}
+━━━━━━━━━━━━━━━━━
+Place: {place}
+City: {city}
+Date: {date}
+Time: {time_slot}
+Tickets: {tickets}
+Total: ₹{total_amount}
+━━━━━━━━━━━━━━━━━
+Payment ID: {razorpay_payment_id}
+Status: CONFIRMED"""
+                
+                # Generate QR code as base64
+                qr_code_data = generate_qr_code_base64(qr_data)
+                logger.info(f"✅ QR Code generated for booking: {booking_id}")
+                
+                # Save booking data to file for records
+                try:
                     bookings_file = os.path.join(os.path.dirname(__file__), 'bookings.json')
-                    with open(bookings_file, 'r') as f:
-                        bookings = json.load(f)
+                    bookings = {}
                     
-                    booking = bookings.get(booking_id, {})
-                    if booking:
-                        ticket_path = generate_ticket(
-                            booking_id,
-                            booking.get('name', 'Guest'),
-                            booking.get('place', 'Tourism Place'),
-                            booking.get('date', ''),
-                            booking.get('time', ''),
-                            razorpay_payment_id
-                        )
-                        logger.info(f"✅ Ticket generated: {ticket_path}")
+                    # Load existing bookings if file exists
+                    if os.path.exists(bookings_file):
+                        with open(bookings_file, 'r') as f:
+                            bookings = json.load(f)
+                    
+                    # Save new booking
+                    bookings[booking_id] = {
+                        'name': name,
+                        'email': email,
+                        'phone': phone,
+                        'place': place,
+                        'city': city,
+                        'date': date,
+                        'time': time_slot,
+                        'tickets': tickets,
+                        'total_amount': total_amount,
+                        'payment_status': 'completed',
+                        'order_id': razorpay_order_id,
+                        'payment_id': razorpay_payment_id,
+                        'timestamp': datetime.now().isoformat()
+                    }
+                    
+                    # Write back to file
+                    with open(bookings_file, 'w') as f:
+                        json.dump(bookings, f, indent=2)
+                    
+                    logger.info(f"✅ Booking saved to file: {booking_id}")
+                except Exception as save_error:
+                    logger.warning(f"Could not save booking to file: {str(save_error)}")
+                    
             except Exception as e:
-                logger.error(f"Ticket generation error: {str(e)}")
+                logger.error(f"QR code generation error: {str(e)}", exc_info=True)
             
             summary = "✅ Booking Confirmed!\n\n🎉 Your ticket has been successfully booked.\n📲 Check your email for the booking details."
             return jsonify({
                 'success': True,
                 'summary': summary,
+                'qr_code': qr_code_data,
                 'message': 'Payment verified successfully',
                 'booking_id': booking_id,
                 'payment_id': razorpay_payment_id
             })
         else:
             logger.error("❌ Signature verification failed")
-            # Update booking as failed
-            if booking_id:
-                try:
-                    bookings_file = os.path.join(os.path.dirname(__file__), 'bookings.json')
-                    with open(bookings_file, 'r') as f:
-                        bookings = json.load(f)
-                    
-                    if booking_id in bookings:
-                        bookings[booking_id]["payment_status"] = "failed"
-                        with open(bookings_file, 'w') as f:
-                            json.dump(bookings, f, indent=2)
-                except Exception as e:
-                    logger.warning(f"Could not update failed booking: {str(e)}")
             
             return jsonify({
                 'success': False,

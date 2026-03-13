@@ -14,7 +14,7 @@ let bookingState = {
   selectedPlaceDetails: null,
   selectedTime: null,
   selectedDate: null,
-  ticketPrice: 500,
+  ticketPrice: 1,
   userDetails: {
     name: '',
     email: '',
@@ -76,13 +76,13 @@ async function searchCity(message) {
       }, 800);
     } else {
       // City not found - show more helpful message
-      const welcomeMsg = `🌍 <b>Welcome to Tourism Ticket Booking!</b>\n\n${data.reply}\n\n<b>💡 Tip:</b> Type any city name from the list above to explore amazing places!`;
+      const welcomeMsg = `Hmm, I couldn't find that city! 🤔\n\n${data.reply}\n\n💡 <b>Tip:</b> Just type any city from the list to get started!`;
       addMessage(welcomeMsg, false);
       msgInput.disabled = false;
     }
   } catch (error) {
     console.error(error);
-    addMessage("⚠️ <b>Oops!</b> Server error. Please try again.", false);
+    addMessage("⚠️ Oops! Let me try that again. Please check your internet and try again! 📶", false);
     msgInput.disabled = false;
   }
 }
@@ -234,7 +234,7 @@ async function fetchPlaceDetails() {
     // Check if response is successful and has required data
     if (response.ok && data.place && data.description && data.city) {
       bookingState.selectedPlaceDetails = data;
-      bookingState.ticketPrice = 500; // Default price
+      bookingState.ticketPrice = 1; // Default price
       bookingState.step = 'time_selection';
       
       // Show place name and description in an attractive card
@@ -522,7 +522,7 @@ function addConfirmationButtons() {
   
   // Confirmation message
   const confirmText = document.createElement('div');
-  confirmText.innerHTML = '<b style="color: #128C7E; margin-top: 12px; display: block;">All correct? 👍</b>';
+  confirmText.innerHTML = '<b style="color: #128C7E; margin-top: 12px; display: block;">✨ Look good? Let\'s proceed!</b>';
   wrapper.appendChild(confirmText);
   
   const buttonContainer = document.createElement('div');
@@ -534,7 +534,7 @@ function addConfirmationButtons() {
   // CONFIRM BUTTON
   const confirmBtn = document.createElement('button');
   confirmBtn.className = 'booking-btn';
-  confirmBtn.innerHTML = '✅ Confirm & Book';
+  confirmBtn.innerHTML = '✅ Yes, Let\'s Go!';
   confirmBtn.onclick = () => proceedToBooking();
   confirmBtn.style.cssText = `
     flex: 1;
@@ -562,7 +562,7 @@ function addConfirmationButtons() {
   // CANCEL BUTTON
   const cancelBtn = document.createElement('button');
   cancelBtn.className = 'booking-btn';
-  cancelBtn.innerHTML = '❌ Change';
+  cancelBtn.innerHTML = '✏️ Edit';
   cancelBtn.onclick = () => cancelBooking();
   cancelBtn.style.cssText = `
     flex: 1;
@@ -826,8 +826,8 @@ function openBookingForm() {
     margin-top: 5px;
   `;
   priceDiv.innerHTML = `
-    <p style="margin: 3px 0; color: #333;"><b>Price per ticket:</b> ₹<span id="inline_price_per_ticket">500</span></p>
-    <p style="margin: 3px 0; color: #128c7e; font-weight: bold;"><b>Total:</b> ₹<span id="inline_total_price">500</span></p>
+    <p style="margin: 3px 0; color: #333;"><b>Price per ticket:</b> ₹<span id="inline_price_per_ticket">1</span></p>
+    <p style="margin: 3px 0; color: #128c7e; font-weight: bold;"><b>Total:</b> ₹<span id="inline_total_price">1</span></p>
   `;
   form.appendChild(priceDiv);
   
@@ -891,7 +891,7 @@ function updateInlinePriceDisplay() {
   
   if (ticketsSelect.value) {
     const numTickets = parseInt(ticketsSelect.value);
-    const ticketPrice = 500;
+    const ticketPrice = 1;
     const total = ticketPrice * numTickets;
     
     pricePerTicketSpan.textContent = `${ticketPrice}`;
@@ -928,12 +928,69 @@ function submitInlineBookingForm(event) {
     tickets: numTickets
   };
   
+  // Build booking summary message
+  const totalPrice = bookingState.ticketPrice * numTickets;
+  const bookingSummaryText = `📊 BOOKING SUMMARY
+
+👤 Personal Details:
+📝 Name: ${name}
+📧 Email: ${email}
+📞 Phone: ${phone}
+
+🎫 Booking Details:
+📍 Place: ${bookingState.selectedPlace}
+🏙️ City: ${bookingState.selectedCity}
+⏰ Time: ${bookingState.selectedTime}
+📅 Date: ${bookingState.selectedDate}
+🎟️ Tickets: ${numTickets}
+
+💰 Price Calculation:
+Price per Ticket: ₹${bookingState.ticketPrice}
+Total Tickets: ${numTickets}
+Total Amount: ₹${totalPrice}`;
+
+  // Send booking summary to webhook
+  sendFormDataToWebhook({
+    message: bookingSummaryText,
+    timestamp: new Date().toISOString()
+  });
+  
   addMessage("✅ Details Confirmed!", true);
   bookingState.step = 'summary';
   
   setTimeout(() => {
     showBookingSummary();
   }, 500);
+}
+
+async function sendFormDataToWebhook(data) {
+  try {
+    console.log('📤 Sending form data to webhook...', data);
+    
+    const response = await fetch('https://ganeshpp.app.n8n.cloud/webhook-test/3eeb735a-9ad3-478d-b734-0afd35e1827c', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data),
+      mode: 'cors'
+    });
+    
+    console.log('📭 Webhook response status:', response.status);
+    
+    if (response.ok) {
+      console.log('✅ Form data sent to webhook successfully');
+      const responseData = await response.json().catch(() => null);
+      console.log('✅ Webhook response data:', responseData);
+    } else {
+      console.error('⚠️ Webhook response error:', response.status, response.statusText);
+      const errorData = await response.text().catch(() => null);
+      console.error('⚠️ Error details:', errorData);
+    }
+  } catch (error) {
+    console.error('⚠️ Error sending data to webhook:', error);
+    console.error('⚠️ Error details:', error.message);
+  }
 }
 
 function updatePriceDisplay() {
@@ -944,7 +1001,7 @@ function updatePriceDisplay() {
   
   if (ticketsSelect.value) {
     const numTickets = parseInt(ticketsSelect.value);
-    const ticketPrice = 500;
+    const ticketPrice = 1;
     const total = ticketPrice * numTickets;
     
     pricePerTicketSpan.textContent = `₹${ticketPrice}`;
@@ -978,6 +1035,33 @@ function submitBookingForm(event) {
     phone: phone,
     tickets: numTickets
   };
+  
+  // Build booking summary message
+  const totalPrice = bookingState.ticketPrice * numTickets;
+  const bookingSummaryText = `📊 BOOKING SUMMARY
+
+👤 Personal Details:
+📝 Name: ${name}
+📧 Email: ${email}
+📞 Phone: ${phone}
+
+🎫 Booking Details:
+📍 Place: ${bookingState.selectedPlace}
+🏙️ City: ${bookingState.selectedCity}
+⏰ Time: ${bookingState.selectedTime}
+📅 Date: ${bookingState.selectedDate}
+🎟️ Tickets: ${numTickets}
+
+💰 Price Calculation:
+Price per Ticket: ₹${bookingState.ticketPrice}
+Total Tickets: ${numTickets}
+Total Amount: ₹${totalPrice}`;
+
+  // Send booking summary to webhook
+  sendFormDataToWebhook({
+    message: bookingSummaryText,
+    timestamp: new Date().toISOString()
+  });
   
   closeBookingForm();
   bookingState.step = 'summary';
@@ -1136,6 +1220,8 @@ function openRazorpayCheckout(orderData, totalPrice) {
 
 async function verifyPayment(response, orderId) {
   try {
+    const totalPrice = bookingState.ticketPrice * bookingState.userDetails.tickets;
+    
     const verifyResponse = await fetch('http://127.0.0.1:5000/verify-payment', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1143,7 +1229,18 @@ async function verifyPayment(response, orderId) {
         razorpay_order_id: orderId,
         razorpay_payment_id: response.razorpay_payment_id,
         razorpay_signature: response.razorpay_signature,
-        booking_id: Date.now().toString()
+        booking_id: Date.now().toString(),
+        // Pass booking details for QR code generation
+        name: bookingState.userDetails.name,
+        email: bookingState.userDetails.email,
+        phone: bookingState.userDetails.phone,
+        place: bookingState.selectedPlace,
+        city: bookingState.selectedCity,
+        time: bookingState.selectedTime,
+        date: bookingState.selectedDate,
+        tickets: bookingState.userDetails.tickets,
+        price_per_ticket: bookingState.ticketPrice,
+        total_amount: totalPrice
       })
     });
     
@@ -1151,6 +1248,14 @@ async function verifyPayment(response, orderId) {
     
     if (result.success) {
       addMessage(result.summary, false);
+      
+      // Display QR code if available
+      if (result.qr_code) {
+        setTimeout(() => {
+          displayQRCode(result.qr_code);
+        }, 800);
+      }
+      
       msgInput.disabled = false;
       bookingState.step = 'completed';
       
@@ -1165,6 +1270,102 @@ async function verifyPayment(response, orderId) {
     addMessage('⚠️ Error verifying payment. Please contact support.', false);
     msgInput.disabled = false;
   }
+}
+
+function displayQRCode(qrCodeBase64) {
+  const totalPrice = bookingState.ticketPrice * bookingState.userDetails.tickets;
+  
+  const messageDiv = document.createElement('div');
+  messageDiv.className = 'message bot';
+  
+  const wrapper = document.createElement('div');
+  wrapper.className = 'message-wrapper';
+  
+  const avatar = document.createElement('div');
+  avatar.className = 'message-avatar';
+  avatar.textContent = '🎫';
+  messageDiv.appendChild(avatar);
+  
+  const contentDiv = document.createElement('div');
+  contentDiv.className = 'message-content';
+  
+  // Booking summary with user details
+  const summaryHTML = `
+    <b style="font-size: 15px; color: #128C7E;">📊 YOUR BOOKING DETAILS</b>
+    <div style="margin-top: 10px; font-size: 13px; line-height: 1.8; color: #333;">
+      <b>👤 Passenger:</b> ${bookingState.userDetails.name}<br>
+      <b>📧 Email:</b> ${bookingState.userDetails.email}<br>
+      <b>📞 Phone:</b> ${bookingState.userDetails.phone}<br>
+      <br>
+      <b>📍 Place:</b> ${bookingState.selectedPlace}<br>
+      <b>🏙️ City:</b> ${bookingState.selectedCity}<br>
+      <b>⏰ Time:</b> ${bookingState.selectedTime}<br>
+      <b>📅 Date:</b> ${bookingState.selectedDate}<br>
+      <b>🎟️ Tickets:</b> ${bookingState.userDetails.tickets}<br>
+      <br>
+      <b style="font-size: 14px; color: #4CAF50;">💰 Total Amount: ₹${totalPrice}</b>
+    </div>
+  `;
+  
+  const summaryDiv = document.createElement('div');
+  summaryDiv.innerHTML = summaryHTML;
+  summaryDiv.style.cssText = `
+    background: #f0f8f7;
+    padding: 12px;
+    border-radius: 8px;
+    border-left: 4px solid #128C7E;
+    margin-bottom: 15px;
+  `;
+  contentDiv.appendChild(summaryDiv);
+  
+  // QR Code Section
+  const qrTitle = document.createElement('div');
+  qrTitle.innerHTML = '<b style="font-size: 14px; color: #128C7E; text-align: center;">🎫 Your Booking QR Code:</b>';
+  qrTitle.style.marginBottom = '12px';
+  contentDiv.appendChild(qrTitle);
+  
+  const qrContainer = document.createElement('div');
+  qrContainer.style.cssText = `
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #ffffff;
+    padding: 15px;
+    border-radius: 12px;
+    border: 2px solid #128C7E;
+  `;
+  
+  const qrImage = document.createElement('img');
+  qrImage.src = qrCodeBase64;
+  qrImage.alt = 'Booking QR Code';
+  qrImage.style.cssText = `
+    max-width: 250px;
+    width: 250px;
+    height: 250px;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(18, 140, 126, 0.2);
+  `;
+  qrContainer.appendChild(qrImage);
+  
+  contentDiv.appendChild(qrContainer);
+  
+  const instrDiv = document.createElement('div');
+  instrDiv.innerHTML = '<div style="margin-top: 12px; font-size: 13px; color: #074e3e; text-align: center; background: #e8f5e9; padding: 10px; border-radius: 6px;"><b>📸 Important:</b> Screenshot this QR code and show it at the venue for entry.</div>';
+  contentDiv.appendChild(instrDiv);
+  
+  wrapper.appendChild(contentDiv);
+  
+  const timeDiv = document.createElement('div');
+  timeDiv.className = 'message-time';
+  timeDiv.textContent = getCurrentTime();
+  wrapper.appendChild(timeDiv);
+  
+  messageDiv.appendChild(wrapper);
+  chatbox.appendChild(messageDiv);
+  
+  setTimeout(() => {
+    chatbox.scrollTop = chatbox.scrollHeight;
+  }, 100);
 }
 
 // ===== EMOJI AND MENU FUNCTIONS =====
@@ -1195,21 +1396,22 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   
   // Initialize with welcome message
-  addMessage("🌍 <b>Welcome to Tourism Bot!</b>", false);
+  addMessage("👋 Hey there! Welcome to your travel buddy! 🌍", false);
   setTimeout(() => {
-    const welcome = `🤖 <b>Tourism Booking Bot</b>
+    const welcome = `I'm your Tourism Bot, and I'm here to help you discover amazing attractions and book tickets instantly! 🎫
 
-Discover & book amazing attractions instantly!
+Here's what I can do for you:
+✨ Explore attractions by city
+🕒 Pick your preferred time slot
+📅 Choose the perfect date
+👤 Save your details securely
+💳 Complete payment instantly
 
-✅ Browse attractions by city
-✅ Select time slots & dates
-✅ Fill your personal details
-✅ Secure payment with Razorpay
+Ready to explore? Just type any city name!
 
-📍 Try cities like:
-Delhi • Agra • Jaipur • Mumbai • Goa • Bangalore • Hyderabad • Varanasi • Kerala • Shimla • Manali • Rishikesh • Udaipur • Jodhpur • Mysore • Chiang Mai`;
+Popular destinations: Delhi • Agra • Jaipur • Mumbai • Goa • Bangalore • Hyderabad • Varanasi • Kerala • Shimla • Manali`;
     addMessage(welcome, false);
-  }, 600);
+  }, 800);
 });
 
 // Handle send button click

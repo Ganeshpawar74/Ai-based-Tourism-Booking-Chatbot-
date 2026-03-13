@@ -27,7 +27,7 @@ def get_or_create_session(session_id):
             "user_email": None,
             "user_phone": None,
             "available_places": None,
-            "price_per_ticket": 500,
+            "price_per_ticket": 1,
             "booking_id": None
         }
     return conversations[session_id]
@@ -53,7 +53,7 @@ def reset_session(session_id):
             "user_email": None,
             "user_phone": None,
             "available_places": None,
-            "price_per_ticket": 500,
+            "price_per_ticket": 1,
             "booking_id": None
         }
     
