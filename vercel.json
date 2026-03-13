@@ -4,33 +4,15 @@
     {
       "src": "api/index.py",
       "use": "@vercel/python"
-    },
-    {
-      "src": "frontend/**",
-      "use": "@vercel/static"
     }
   ],
   "routes": [
-    {
-      "src": "^/api(.*)",
-      "dest": "api/index.py"
-    },
-    {
-      "src": "^/static(.*)",
-      "dest": "/frontend$1"
-    },
-    {
-      "src": "^.*\\.(js|css|ico|png|jpg|jpeg|svg)$",
-      "dest": "frontend/$0"
-    },
     {
       "src": "/(.*)",
       "dest": "api/index.py"
     }
   ],
   "env": {
-    "RAZORPAY_KEY_ID": "@RAZORPAY_KEY_ID",
-    "RAZORPAY_KEY_SECRET": "@RAZORPAY_KEY_SECRET",
-    "RAZORPAY_WEBHOOK_SECRET": "@RAZORPAY_WEBHOOK_SECRET"
+    "PYTHONPATH": "/var/task"
   }
 }
