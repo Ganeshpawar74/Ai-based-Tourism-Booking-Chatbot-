@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tourism Booking Bot</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://checkout.razorpay.com/v1/checkout.js" async></script>
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Header -->
+        <div class="chat-header">
+            <div class="header-left">
+                <div class="bot-avatar">🤖</div>
+                <div class="bot-header-info">
+                    <h1>Tourism Bot</h1>
+                    <span class="status online">● Online</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="header-btn" onclick="toggleMenu()">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Chat Messages Area -->
+        <div id="chatbox" class="chat-messages"></div>
+
+        <!-- Typing Indicator -->
+        <div id="typingIndicator" class="typing-indicator" style="display: none;">
+            <div class="bot-avatar-small">🤖</div>
+            <div class="typing-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+
+        <!-- Message Input Area -->
+        <div class="chat-footer">
+            <div class="message-input-wrapper">
+                <button class="emoji-btn" onclick="toggleEmojiPicker()" title="Emoji">
+                    <i class="fas fa-smile"></i>
+                </button>
+                <input 
+                    id="msg" 
+                    type="text"
+                    placeholder="Message..."
+                    class="message-input"
+                    autocomplete="off">
+                <button onclick="send()" class="send-btn" title="Send message">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+            
+            <!-- Emoji Picker (Hidden by default) -->
+            <div id="emojiPicker" class="emoji-picker" style="display: none;">
+                <div class="emoji-grid">
+                    <button class="emoji-item" onclick="insertEmoji('😀')">😀</button>
+                    <button class="emoji-item" onclick="insertEmoji('😂')">😂</button>
+                    <button class="emoji-item" onclick="insertEmoji('😍')">😍</button>
+                    <button class="emoji-item" onclick="insertEmoji('🤔')">🤔</button>
+                    <button class="emoji-item" onclick="insertEmoji('👍')">👍</button>
+                    <button class="emoji-item" onclick="insertEmoji('👌')">👌</button>
+                    <button class="emoji-item" onclick="insertEmoji('✨')">✨</button>
+                    <button class="emoji-item" onclick="insertEmoji('🎉')">🎉</button>
+                    <button class="emoji-item" onclick="insertEmoji('🙏')">🙏</button>
+                    <button class="emoji-item" onclick="insertEmoji('❤️')">❤️</button>
+                    <button class="emoji-item" onclick="insertEmoji('🙋')">🙋</button>
+                    <button class="emoji-item" onclick="insertEmoji('🎯')">🎯</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Form Modal -->
+    <div id="bookingModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Complete Your Booking</h2>
+                <button class="close-btn" onclick="closeBookingForm()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="bookingForm" onsubmit="submitBookingForm(event)">
+                    <div class="form-group">
+                        <label for="name">Full Name *</label>
+                        <input type="text" id="name" name="name" required placeholder="Enter your name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">Email *</label>
+                        <input type="email" id="email" name="email" required placeholder="your@email.com">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone">Phone Number *</label>
+                        <input type="tel" id="phone" name="phone" required placeholder="10-digit mobile number">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="num_tickets">Number of Tickets *</label>
+                        <select id="num_tickets" name="num_tickets" required onchange="updatePriceDisplay()">
+                            <option value="">Select number of tickets</option>
+                            <option value="1">1 Ticket</option>
+                            <option value="2">2 Tickets</option>
+                            <option value="3">3 Tickets</option>
+                            <option value="4">4 Tickets</option>
+                            <option value="5">5 Tickets</option>
+                            <option value="6">6 Tickets</option>
+                            <option value="7">7 Tickets</option>
+                            <option value="8">8 Tickets</option>
+                            <option value="9">9 Tickets</option>
+                            <option value="10">10 Tickets</option>
+                        </select>
+                    </div>
+                    
+                    <div id="priceDisplay" class="price-display" style="display: none;">
+                        <p>Price per ticket: <span id="pricePerTicket">₹500</span></p>
+                        <p>Total: <span id="totalPrice">₹500</span></p>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="cancel-btn" onclick="closeBookingForm()">Cancel</button>
+                        <button type="submit" class="submit-btn">Proceed to Payment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div id="paymentModal" class="modal" style="display: none;">
+        <div class="modal-content payment-modal">
+            <div class="modal-header">
+                <h2>Complete Payment</h2>
+                <button class="close-btn" onclick="closePaymentModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="payment-summary">
+                    <p id="paymentPlace"></p>
+                    <p id="paymentTime"></p>
+                    <p id="paymentTickets"></p>
+                    <p id="paymentTotal" class="total-amount"></p>
+                </div>
+                
+                <div class="payment-method">
+                    <h3>Select Payment Method</h3>
+                    <button class="payment-option" type="button" onclick="return processPaymentMethod('card')">
+                        <i class="fas fa-credit-card"></i> Credit/Debit Card
+                    </button>
+                    <button class="payment-option" type="button" onclick="return processPaymentMethod('upi')">
+                        <i class="fas fa-mobile-alt"></i> UPI
+                    </button>
+                    <button class="payment-option" type="button" onclick="return processPaymentMethod('wallet')">
+                        <i class="fas fa-wallet"></i> Digital Wallet
+                    </button>
+                </div>
+                
+                <div id="loadingPayment" style="display: none;" class="loading">
+                    <div class="spinner"></div>
+                    <p>Processing payment...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Display Modal -->
+    <div id="qrModal" class="modal" style="display: none;">
+        <div class="modal-content qr-modal">
+            <div class="modal-header">
+                <h2>✅ Booking Confirmed!</h2>
+                <button class="close-btn" onclick="closeQRModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="bookingSummary" class="booking-summary"></div>
+                <div class="qr-code-container">
+                    <p style="text-align: center; color: #666; margin-bottom: 15px;">📱 Show this QR Code at the entrance:</p>
+                    <img id="qrImage" src="" alt="QR Code" class="qr-code-image">
+                </div>
+                <div class="qr-actions">
+                    <button onclick="downloadQR()" class="download-btn">
+                        <i class="fas fa-download"></i> Download Ticket
+                    </button>
+                    <button onclick="newBooking()" class="new-booking-btn">
+                        <i class="fas fa-plus"></i> New Booking
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="chatbot.js"></script>
+</body>
+</html>

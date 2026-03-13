@@ -1,0 +1,82 @@
+"""
+Configuration file for the Tourism Booking Bot
+Loads environment variables from .env file
+"""
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+class Config:
+    """Base configuration"""
+    
+    # Gemini AI Configuration
+    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', 'YOUR_API_KEY')
+    GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-1.5-flash')
+    
+    # Flask Configuration
+    FLASK_ENV = os.getenv('FLASK_ENV', 'development')
+    FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'
+    FLASK_HOST = os.getenv('FLASK_HOST', '127.0.0.1')
+    FLASK_PORT = int(os.getenv('FLASK_PORT', 5000))
+    
+    # Firebase Configuration
+    FIREBASE_KEY_PATH = os.getenv('FIREBASE_KEY_PATH', 'firebase_key.json')
+    FIREBASE_PROJECT_ID = os.getenv('FIREBASE_PROJECT_ID', '')
+    
+    # CORS Configuration
+    CORS_ORIGINS = os.getenv('CORS_ORIGINS', 'http://localhost:3000,http://127.0.0.1:5000').split(',')
+    
+    # Database Configuration
+    DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///tourism.db')
+    
+    # ===== RAZORPAY PAYMENT CONFIGURATION =====
+    # Production-ready Razorpay integration
+    # Get your keys from: https://dashboard.razorpay.com/app/keys
+    RAZORPAY_KEY_ID = os.getenv('RAZORPAY_KEY_ID', '')
+    RAZORPAY_KEY_SECRET = os.getenv('RAZORPAY_KEY_SECRET', '')
+    RAZORPAY_WEBHOOK_SECRET = os.getenv('RAZORPAY_WEBHOOK_SECRET', '')
+    
+    # Payment Settings
+    DEFAULT_TICKET_PRICE = float(os.getenv('DEFAULT_TICKET_PRICE', 500))  # In INR
+    MIN_BOOKING_AMOUNT = float(os.getenv('MIN_BOOKING_AMOUNT', 100))      # In INR
+    MAX_BOOKING_AMOUNT = float(os.getenv('MAX_BOOKING_AMOUNT', 100000))   # In INR
+    
+    # QR Code Configuration
+    QR_CODE_VERSION = int(os.getenv('QR_CODE_VERSION', 1))
+    QR_CODE_BOX_SIZE = int(os.getenv('QR_CODE_BOX_SIZE', 10))
+    QR_CODE_BORDER = int(os.getenv('QR_CODE_BORDER', 2))
+    
+    # Payment Timeout (in seconds)
+    PAYMENT_TIMEOUT = int(os.getenv('PAYMENT_TIMEOUT', 3600))  # 1 hour
+
+
+class DevelopmentConfig(Config):
+    """Development environment configuration"""
+    DEBUG = True
+    TESTING = False
+
+
+class ProductionConfig(Config):
+    """Production environment configuration"""
+    DEBUG = False
+    TESTING = False
+
+
+class TestingConfig(Config):
+    """Testing environment configuration"""
+    DEBUG = True
+    TESTING = True
+    DATABASE_URL = 'sqlite:///:memory:'
+
+
+# Select config based on environment
+config_name = os.getenv('FLASK_ENV', 'development')
+config_map = {
+    'development': DevelopmentConfig,
+    'production': ProductionConfig,
+    'testing': TestingConfig
+}
+
+config = config_map.get(config_name, DevelopmentConfig)
