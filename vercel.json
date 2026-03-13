@@ -1,18 +1,3 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "api/index.py"
-    }
-  ],
-  "env": {
-    "PYTHONPATH": "/var/task"
-  }
+  "note": "This project has been migrated from Vercel to Render. Please use render.yaml for deployment configuration."
 }
