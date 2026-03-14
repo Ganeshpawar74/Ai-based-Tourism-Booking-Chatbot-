@@ -45,6 +45,9 @@
                 <button class="emoji-btn" onclick="toggleEmojiPicker()" title="Emoji">
                     <i class="fas fa-smile"></i>
                 </button>
+                <button class="speaker-btn" onclick="toggleLanguageSelector()" title="Text to Speech">
+                    <i class="fas fa-volume-up"></i>
+                </button>
                 <input 
                     id="msg" 
                     type="text"
@@ -54,6 +57,42 @@
                 <button onclick="send()" class="send-btn" title="Send message">
                     <i class="fas fa-paper-plane"></i>
                 </button>
+            </div>
+            
+            <!-- Language Selector (Hidden by default) -->
+            <div id="languageSelector" class="language-selector" style="display: none;">
+                <div class="language-grid">
+                    <button class="language-item" onclick="selectTTSLanguage('en')" title="English">
+                        🇺🇸 English
+                    </button>
+                    <button class="language-item" onclick="selectTTSLanguage('hi')" title="Hindi">
+                        🇮🇳 हिन्दी
+                    </button>
+                    <button class="language-item" onclick="selectTTSLanguage('es')" title="Spanish">
+                        🇪🇸 Español
+                    </button>
+                    <button class="language-item" onclick="selectTTSLanguage('fr')" title="French">
+                        🇫🇷 Français
+                    </button>
+                    <button class="language-item" onclick="selectTTSLanguage('de')" title="German">
+                        🇩🇪 Deutsch
+                    </button>
+                    <button class="language-item" onclick="selectTTSLanguage('it')" title="Italian">
+                        🇮🇹 Italiano
+                    </button>
+                    <button class="language-item" onclick="selectTTSLanguage('pt')" title="Portuguese">
+                        🇵🇹 Português
+                    </button>
+                    <button class="language-item" onclick="selectTTSLanguage('ja')" title="Japanese">
+                        🇯🇵 日本語
+                    </button>
+                    <button class="language-item" onclick="selectTTSLanguage('zh')" title="Chinese">
+                        🇨🇳 中文
+                    </button>
+                    <button class="language-item" onclick="selectTTSLanguage('ar')" title="Arabic">
+                        🇸🇦 العربية
+                    </button>
+                </div>
             </div>
             
             <!-- Emoji Picker (Hidden by default) -->

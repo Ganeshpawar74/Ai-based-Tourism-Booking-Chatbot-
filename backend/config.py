@@ -48,6 +48,12 @@ class Config:
     QR_CODE_BOX_SIZE = int(os.getenv('QR_CODE_BOX_SIZE', 10))
     QR_CODE_BORDER = int(os.getenv('QR_CODE_BORDER', 2))
     
+    # ===== ELEVENLABS TEXT-TO-SPEECH CONFIGURATION =====
+    # Get your API key from: https://elevenlabs.io/
+    ELEVENLABS_API_KEY = os.getenv('ELEVENLABS_API_KEY', 'sk_64dbd14ffd0efe17256050bcc331c5ed1cddbf4b23cdbfd4')
+    ELEVENLABS_VOICE_ID = os.getenv('ELEVENLABS_VOICE_ID', '21m00Tcm4TlvDq8ikWAM')  # Default: Rachel voice
+    ELEVENLABS_MODEL_ID = os.getenv('ELEVENLABS_MODEL_ID', 'eleven_monolingual_v1')
+    
     # Payment Timeout (in seconds)
     PAYMENT_TIMEOUT = int(os.getenv('PAYMENT_TIMEOUT', 3600))  # 1 hour
 

@@ -392,6 +392,31 @@ body {
     transform: scale(1.1);
 }
 
+.speaker-btn {
+    background: none;
+    border: none;
+    color: #0f766e;
+    font-size: 20px;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.speaker-btn:hover {
+    background: #f0f0f0;
+    transform: scale(1.1);
+}
+
+.speaker-btn.active {
+    color: #128C7E;
+    background: #d0f0e8;
+}
+
 .message-input {
     flex: 1;
     border: 1px solid #ddd;
@@ -497,6 +522,55 @@ body {
 .emoji-item:hover {
     background: #f0f0f0;
     transform: scale(1.2);
+}
+
+/* ===== LANGUAGE SELECTOR STYLES ===== */
+.language-selector {
+    position: absolute;
+    bottom: 55px;
+    left: 50px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.15);
+    padding: 10px;
+    z-index: 10;
+    animation: slideUp 0.3s ease-out;
+    max-width: 300px;
+}
+
+.language-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.language-item {
+    background: linear-gradient(135deg, #f0f9ff 0%, #ecfdf5 100%);
+    border: 1px solid #128C7E;
+    color: #0f766e;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 10px 12px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.language-item:hover {
+    background: linear-gradient(135deg, #128C7E 0%, #0f766e 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(18, 140, 126, 0.2);
+}
+
+.language-item.active {
+    background: linear-gradient(135deg, #128C7E 0%, #0f766e 100%);
+    color: white;
+    border-color: #0f766e;
 }
 
 /* ===== MODAL STYLES ===== */

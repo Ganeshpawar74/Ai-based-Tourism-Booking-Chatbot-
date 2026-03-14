@@ -40,8 +40,147 @@ async function send() {
   const message = msgInput.value.trim();
   if (message === '') return;
 
-  if (bookingState.step === 'initial' || bookingState.step === 'city_search') {
+  // Identify user intent and handle accordingly
+  const intent = identifyUserIntent(message);
+  
+  if (intent.type === 'greeting') {
+    // User says Hi, Hello, etc. - Greet and ask for location
+    await handleGreeting(message);
+  } else if (intent.type === 'booking_intent') {
+    // User says "I want to book" - Greet and ask for location
+    await handleBookingIntent(message);
+  } else if (intent.type === 'place_booking') {
+    // User specifies city and place - Direct to booking
+    await handleDirectPlaceBooking(message, intent);
+  } else if (bookingState.step === 'initial' || bookingState.step === 'city_search') {
+    // Default city search
     await searchCity(message);
+  }
+}
+
+// ===== IDENTIFY USER INTENT =====
+function identifyUserIntent(message) {
+  const msgLower = message.toLowerCase();
+  
+  // Check for greeting intent
+  const greetingKeywords = ['hi', 'hello', 'hey', 'hola', 'namaste', 'greetings'];
+  if (greetingKeywords.some(keyword => msgLower.startsWith(keyword))) {
+    return { type: 'greeting' };
+  }
+  
+  // Check for booking intent
+  const bookingKeywords = ['i want to book', 'book', 'booking', 'reserve', 'ticket', 'i need', 'can i book'];
+  if (bookingKeywords.some(keyword => msgLower.includes(keyword))) {
+    // Check if it also contains a place/city combination
+    if (msgLower.includes('for') || msgLower.includes('at') || msgLower.includes('in')) {
+      return { type: 'place_booking', text: message };
+    }
+    return { type: 'booking_intent' };
+  }
+  
+  // Default - city search
+  return { type: 'city_search', text: message };
+}
+
+// ===== HANDLE GREETING =====
+async function handleGreeting(message) {
+  addMessage(message, true);
+  msgInput.value = '';
+  msgInput.disabled = true;
+  bookingState.step = 'city_search';
+  
+  setTimeout(() => {
+    addMessage("👋 <b>Hi there!</b> Welcome! Thanks for choosing us! 🎉\n\nI'm excited to help you book your perfect tourism experience.\n\n📍 <b>Which city would you like to explore?</b>\n\nPopular choices: Delhi • Agra • Jaipur • Mumbai • Goa • Bangalore • Hyderabad • Pune • Nashik • And many more!", false);
+  }, 300);
+  
+  setTimeout(() => {
+    msgInput.disabled = false;
+  }, 800);
+}
+
+// ===== HANDLE BOOKING INTENT =====
+async function handleBookingIntent(message) {
+  addMessage(message, true);
+  msgInput.value = '';
+  msgInput.disabled = true;
+  bookingState.step = 'city_search';
+  
+  setTimeout(() => {
+    addMessage("🎫 <b>Great!</b> I'd love to help you book a ticket! Let me get some details.\n\n📍 <b>Which city would you like to visit?</b>\n\nAvailable cities: Delhi • Agra • Jaipur • Mumbai • Goa • Bangalore • Hyderabad • Varanasi • Kerala • Shimla • Manali • Rishikesh • Udaipur • Jodhpur • Mysore • Pune • Nashik • Aurangabad • Lucknow • Jaisalmer • Pushkar • Mount Abu • Kanyakumari • Hampi • Darjeeling • Khajuraho", false);
+  }, 300);
+  
+  setTimeout(() => {
+    msgInput.disabled = false;
+  }, 800);
+}
+
+// ===== HANDLE DIRECT PLACE BOOKING =====
+async function handleDirectPlaceBooking(message, intent) {
+  addMessage(message, true);
+  msgInput.value = '';
+  msgInput.disabled = true;
+  
+  try {
+    // Send to backend to parse city and place
+    const response = await fetch("http://127.0.0.1:5000/parse-booking-intent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: message })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success && data.city_key && data.place_name) {
+      // Found both city and place
+      bookingState.step = 'place_description';
+      bookingState.selectedCity = data.city_name;
+      bookingState.selectedCityKey = data.city_key;
+      bookingState.selectedPlace = data.place_name;
+      
+      setTimeout(() => {
+        addMessage(`✨ <b>Perfect!</b> I found the place you're looking for in ${data.city_name}!`, false);
+      }, 300);
+      
+      setTimeout(() => {
+        // Show place description
+        const descriptionHTML = `
+          <b style="color: #128C7E; font-size: 15px;">${data.place_name}</b>
+          <div style="margin-top: 10px; color: #333; font-size: 13px; line-height: 1.6;">
+            ${data.place_description}
+          </div>
+          <div style="margin-top: 12px; padding: 10px; background: #e8f5e9; border-radius: 6px; font-size: 12px; color: #074e3e;">
+            ⏰ Now select your preferred time and date to continue!
+          </div>
+        `;
+        addMessage(descriptionHTML, false);
+      }, 600);
+      
+      setTimeout(() => {
+        addTimeSlotButtons();
+      }, 1200);
+    } else if (data.city_key && data.places) {
+      // Found city but not specific place - show place selection
+      bookingState.step = 'place_selection';
+      bookingState.selectedCity = data.city_name;
+      bookingState.selectedCityKey = data.city_key;
+      
+      setTimeout(() => {
+        addMessage(`✨ <b>Great!</b> Found ${data.city_name}! Now let's pick a place.\n\n${data.reply}`, false);
+      }, 300);
+      
+      setTimeout(() => {
+        addPlaceSelectionButtons(data.places);
+      }, 800);
+    } else {
+      // City not found
+      const welcomeMsg = `Hmm, I couldn't find that location! 🤔\n\n${data.reply}\n\n💡 <b>Tip:</b> Try saying: "Book a ticket for Red Fort in Delhi" or just type the city name!`;
+      addMessage(welcomeMsg, false);
+      msgInput.disabled = false;
+    }
+  } catch (error) {
+    console.error(error);
+    addMessage("⚠️ Let me parse that differently. Please type the city name first!", false);
+    msgInput.disabled = false;
   }
 }
 
@@ -76,7 +215,7 @@ async function searchCity(message) {
       }, 800);
     } else {
       // City not found - show more helpful message
-      const welcomeMsg = `Hmm, I couldn't find that city! 🤔\n\n${data.reply}\n\n💡 <b>Tip:</b> Just type any city from the list to get started!`;
+      const welcomeMsg = `Hmm, I couldn't find that city! 🤔\n\n${data.reply}\n\n💡 <b>Tip:</b> Just type any city from the list to get started! Or try: "Book a ticket for Taj Mahal in Agra"`;
       addMessage(welcomeMsg, false);
       msgInput.disabled = false;
     }
@@ -107,6 +246,47 @@ function addMessage(text, isUser) {
   contentDiv.innerHTML = text.replace(/\n/g, '<br>');
   wrapper.appendChild(contentDiv);
   
+  // Add speaker button for bot messages (for TTS)
+  if (!isUser) {
+    const speakerContainer = document.createElement('div');
+    speakerContainer.style.cssText = 'display: flex; align-items: center; gap: 8px; margin-top: 8px;';
+    
+    const speakerBtn = document.createElement('button');
+    speakerBtn.className = 'message-speaker';
+    speakerBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+    speakerBtn.title = `Click to hear this in ${getCurrentLanguageName(currentTTSLanguage)}`;
+    speakerBtn.style.cssText = `
+      background: none;
+      border: 1px solid #128C7E;
+      color: #128C7E;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      padding: 0;
+    `;
+    speakerBtn.onmouseover = () => {
+      speakerBtn.background = '#f0f0f0';
+      speakerBtn.style.background = '#f0f0f0';
+    };
+    speakerBtn.onmouseout = () => {
+      speakerBtn.style.background = 'none';
+    };
+    speakerBtn.onclick = () => {
+      // Extract plain text from HTML
+      const plainText = contentDiv.innerText || text.replace(/<[^>]*>/g, '');
+      convertToSpeech(plainText, messageDiv);
+    };
+    
+    speakerContainer.appendChild(speakerBtn);
+    wrapper.appendChild(speakerContainer);
+  }
+  
   const timeDiv = document.createElement('div');
   timeDiv.className = 'message-time';
   timeDiv.textContent = getCurrentTime();
@@ -118,6 +298,23 @@ function addMessage(text, isUser) {
   setTimeout(() => {
     chatbox.scrollTop = chatbox.scrollHeight;
   }, 50);
+}
+
+// Helper function to get language name
+function getCurrentLanguageName(lang) {
+  const langNames = {
+    en: 'English',
+    hi: 'Hindi',
+    es: 'Spanish',
+    fr: 'French',
+    de: 'German',
+    it: 'Italian',
+    pt: 'Portuguese',
+    ja: 'Japanese',
+    zh: 'Chinese',
+    ar: 'Arabic'
+  };
+  return langNames[lang] || 'English';
 }
 
 // ===== STEP 1: PLACE SELECTION (CLICKABLE BUTTONS - NAMES ONLY) =====
@@ -1386,6 +1583,163 @@ function toggleMenu() {
   console.log('Menu toggled');
 }
 
+// ===== TEXT-TO-SPEECH FUNCTIONS =====
+let currentTTSLanguage = 'en'; // Default language is English
+
+function toggleLanguageSelector() {
+  const selector = document.getElementById('languageSelector');
+  if (!selector) {
+    console.error('Language selector not found');
+    return;
+  }
+  
+  if (selector.style.display === 'none' || selector.style.display === '') {
+    selector.style.display = 'block';
+  } else {
+    selector.style.display = 'none';
+  }
+}
+
+function selectTTSLanguage(lang) {
+  currentTTSLanguage = lang;
+  
+  // Update active state
+  const langItems = document.querySelectorAll('.language-item');
+  langItems.forEach(item => {
+    if (item.dataset.lang === lang) {
+      item.classList.add('active');
+    } else {
+      item.classList.remove('active');
+    }
+  });
+  
+  // Hide selector
+  document.getElementById('languageSelector').style.display = 'none';
+  
+  // Show notification
+  const langNames = {
+    en: 'English',
+    hi: 'Hindi',
+    es: 'Spanish',
+    fr: 'French',
+    de: 'German',
+    it: 'Italian',
+    pt: 'Portuguese',
+    ja: 'Japanese',
+    zh: 'Chinese',
+    ar: 'Arabic'
+  };
+  
+  msgInput.placeholder = `Text-to-Speech enabled: ${langNames[lang]}`;
+  msgInput.style.color = '#128C7E';
+  msgInput.style.fontStyle = 'italic';
+  
+  // Reset after 3 seconds
+  setTimeout(() => {
+    msgInput.placeholder = 'Type a message...';
+    msgInput.style.color = '#333';
+    msgInput.style.fontStyle = 'normal';
+  }, 3000);
+}
+
+async function convertToSpeech(text, messageElement) {
+  try {
+    // Show loading indicator on the speaker button if available
+    const speakerBtn = messageElement.querySelector('.message-speaker');
+    if (speakerBtn) {
+      speakerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+      speakerBtn.disabled = true;
+    }
+    
+    const response = await fetch('http://127.0.0.1:5000/text-to-speech', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text: text,
+        language: currentTTSLanguage
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.error) {
+      throw new Error(data.error);
+    }
+    
+    // Play the audio
+    playAudio(data.audio, messageElement, speakerBtn);
+    
+  } catch (error) {
+    console.error('TTS Error:', error);
+    
+    if (messageElement.querySelector('.message-speaker')) {
+      const speakerBtn = messageElement.querySelector('.message-speaker');
+      speakerBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+      speakerBtn.disabled = false;
+      speakerBtn.title = 'Error: Could not generate audio';
+      speakerBtn.style.opacity = '0.5';
+    }
+    
+    alert(`Text-to-Speech Error: ${error.message}`);
+  }
+}
+
+function playAudio(audioBase64, messageElement, speakerBtn) {
+  try {
+    // Convert base64 to audio blob
+    const audioBytes = atob(audioBase64);
+    const audioArray = new Uint8Array(audioBytes.length);
+    for (let i = 0; i < audioBytes.length; i++) {
+      audioArray[i] = audioBytes.charCodeAt(i);
+    }
+    
+    const audioBlob = new Blob([audioArray], { type: 'audio/mpeg' });
+    const audioUrl = URL.createObjectURL(audioBlob);
+    
+    // Create audio element
+    const audio = new Audio(audioUrl);
+    
+    // Update button to show playing state
+    if (speakerBtn) {
+      speakerBtn.innerHTML = '<i class="fas fa-pause"></i>';
+      speakerBtn.style.background = '#25D366';
+    }
+    
+    // Reset button when audio ends
+    audio.onended = () => {
+      if (speakerBtn) {
+        speakerBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+        speakerBtn.style.background = '';
+        speakerBtn.disabled = false;
+      }
+      URL.revokeObjectURL(audioUrl);
+    };
+    
+    // Play audio
+    audio.play().catch(error => {
+      console.error('Audio playback error:', error);
+      if (speakerBtn) {
+        speakerBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+        speakerBtn.style.background = '';
+        speakerBtn.disabled = false;
+      }
+    });
+    
+  } catch (error) {
+    console.error('Audio setup error:', error);
+    if (speakerBtn) {
+      speakerBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+      speakerBtn.disabled = false;
+    }
+  }
+}
+
 // ===== KEYBOARD AND LOAD EVENTS =====
 document.addEventListener('DOMContentLoaded', function() {
   msgInput.addEventListener('keypress', function(event) {
@@ -1394,6 +1748,23 @@ document.addEventListener('DOMContentLoaded', function() {
       send();
     }
   });
+  
+  // Initialize language selector
+  const langItems = document.querySelectorAll('.language-item');
+  langItems.forEach(item => {
+    if (item.dataset.lang === 'en') {
+      item.classList.add('active');
+    }
+    item.addEventListener('click', function() {
+      selectTTSLanguage(this.dataset.lang);
+    });
+  });
+  
+  // Hide language selector on page load
+  const langSelector = document.getElementById('languageSelector');
+  if (langSelector) {
+    langSelector.style.display = 'none';
+  }
   
   // Initialize with welcome message
   addMessage("👋 Hey there! Welcome to your travel buddy! 🌍", false);
