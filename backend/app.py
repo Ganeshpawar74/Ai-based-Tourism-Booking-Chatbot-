@@ -8,6 +8,7 @@ import os
 import uuid
 import logging
 import json
+import traceback
 from datetime import datetime
 
 # Direct import from tourist database - NO Gemini API
@@ -981,33 +982,42 @@ def text_to_speech():
                 'error': 'ElevenLabs API key not configured. Set ELEVENLABS_API_KEY environment variable.'
             }), 500
         
-        # Language to voice ID mapping for ElevenLabs (using standard voices)
+        logger.info(f"DEBUG: API Key loaded: {api_key[:20]}...")
+        
+        # Language to voice ID mapping for ElevenLabs
+        # Using free-tier compatible voice - only English and Hindi
         voice_mapping = {
-            'en': '21m00Tcm4TlvDq8ikWAM',      # Rachel - English
-            'hi': 'V4XiGx0BI0zzYLQKVBL2',      # Hindi voice
-            'es': 'l3Phc0Rm47gJ1jEqEk1s',      # Spanish voice
-            'fr': '2rVw8GWvXZe0o7J8ydnU',      # French voice
-            'de': 'B7EfNfKn9LjKQpHJ8tGm',      # German voice  
-            'it': 'QjyMKvKVlKKcLQb0ZkqF',      # Italian voice
-            'pt': 'rnSAGNBW1YaSt2gzuC8c',      # Portuguese voice
-            'ja': 'pnhwF5rk5pE0W5V8LgbA',      # Japanese voice
-            'zh': 'dZD5sBXd24Uh7PkNJfFB',      # Chinese voice
-            'ar': 'Cgw0CtWEJUhCGi-oXL5h',      # Arabic voice
+            'en': config.ELEVENLABS_VOICE_ID,  # English - using configured voice
+            'hi': config.ELEVENLABS_VOICE_ID,  # Hindi - using same voice
         }
         
-        voice_id = voice_mapping.get(language, '21m00Tcm4TlvDq8ikWAM')  # Default to English
+        # If you have a custom voice ID from your ElevenLabs account, use it here
+        if config.ELEVENLABS_VOICE_ID and config.ELEVENLABS_VOICE_ID.strip():
+            # Use the voice ID from .env if explicitly set
+            voice_id = config.ELEVENLABS_VOICE_ID
+        else:
+            voice_id = voice_mapping.get(language, config.ELEVENLABS_VOICE_ID)
         
+        logger.info(f"DEBUG: Voice ID: {voice_id}")
         logger.info(f"TTS Request - Language: {language}, Voice: {voice_id}, Text length: {len(text)}")
         
         # Initialize ElevenLabs client
-        client = ElevenLabs(api_key=api_key)
+        logger.info("DEBUG: Importing ElevenLabs client...")
+        from elevenlabs.client import ElevenLabs
+        logger.info("DEBUG: ElevenLabs imported successfully")
         
-        # Generate audio using the multilingual model
-        audio_generator = client.generate(
+        client = ElevenLabs(api_key=api_key)
+        logger.info("DEBUG: ElevenLabs client initialized")
+        
+        # Generate audio using the correct API method
+        # Note: voice_id is positional, text and other params are keyword-only
+        logger.info(f"DEBUG: Calling convert with voice_id as positional argument")
+        audio_generator = client.text_to_speech.convert(
+            voice_id,
             text=text[:2000],  # Limit to 2000 characters
-            voice=voice_id,
-            model="eleven_multilingual_v2"  # Use multilingual model for better language support
+            model_id="eleven_multilingual_v2"  # Use multilingual model for better language support
         )
+        logger.info("DEBUG: convert() succeeded, collecting bytes...")
         
         # Collect audio bytes
         audio_bytes = b''.join(audio_generator)
@@ -1040,11 +1050,26 @@ def text_to_speech():
             'error': 'ElevenLabs library not installed. Run: pip install elevenlabs'
         }), 500
     except Exception as e:
-        logger.error(f"TTS conversion error: {str(e)}", exc_info=True)
-        return jsonify({
-            'success': False,
-            'error': f'TTS conversion failed: {str(e)}'
-        }), 500
+        error_msg = str(e)
+        logger.error(f"TTS conversion error: {error_msg}", exc_info=True)
+        logger.error(f"Full traceback: {traceback.format_exc()}")
+        
+        # Better error messages for common issues
+        if 'paid_plan_required' in error_msg or 'payment_required' in error_msg.lower():
+            return jsonify({
+                'success': False,
+                'error': f'ElevenLabs: This voice requires a paid subscription. Please upgrade your ElevenLabs account or configure a different voice ID in .env'
+            }), 402
+        elif 'permission_denied' in error_msg.lower() or 'invalid_api_key' in error_msg.lower():
+            return jsonify({
+                'success': False,
+                'error': 'ElevenLabs API Key is invalid or has invalid permissions'
+            }), 401
+        else:
+            return jsonify({
+                'success': False,
+                'error': f'TTS conversion failed: {error_msg}'
+            }), 500
 
 
 @app.route('/supported-languages', methods=['GET'])
@@ -1053,14 +1078,6 @@ def supported_languages():
     languages = {
         'en': 'English',
         'hi': 'Hindi (हिन्दी)',
-        'es': 'Spanish (Español)',
-        'fr': 'French (Français)',
-        'de': 'German (Deutsch)',
-        'it': 'Italian (Italiano)',
-        'pt': 'Portuguese (Português)',
-        'ja': 'Japanese (日本語)',
-        'zh': 'Chinese (中文)',
-        'ar': 'Arabic (العربية)'
     }
     return jsonify({'languages': languages}), 200
 

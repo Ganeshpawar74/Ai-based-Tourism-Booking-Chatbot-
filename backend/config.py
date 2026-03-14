@@ -4,9 +4,17 @@ Loads environment variables from .env file
 """
 import os
 from dotenv import load_dotenv
+from pathlib import Path
 
 # Load environment variables from .env file
-load_dotenv()
+# First, find the .env file location
+env_file = Path(__file__).parent / '.env'
+if env_file.exists():
+    print(f"[CONFIG] Loading .env from: {env_file}")
+    load_dotenv(dotenv_path=env_file, override=True)
+else:
+    print(f"[CONFIG] WARNING: .env file not found at {env_file}")
+    load_dotenv(override=True)
 
 class Config:
     """Base configuration"""
