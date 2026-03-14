@@ -1,6 +1,9 @@
 // Tourism Chatbot - Complete Interactive Multi-step Booking Workflow
 // New Flow: Location -> Places (buttons) -> Description + Time -> Date -> Confirmation -> BOOK NOW -> Form -> Summary -> Payment
 
+// API Configuration
+const API_BASE_URL = 'http://127.0.0.1:10000';
+
 const chatbox = document.getElementById('chatbox');
 const msgInput = document.getElementById('msg');
 const typingIndicator = document.getElementById('typingIndicator');
@@ -122,7 +125,7 @@ async function handleDirectPlaceBooking(message, intent) {
   
   try {
     // Send to backend to parse city and place
-    const response = await fetch("http://127.0.0.1:5000/parse-booking-intent", {
+    const response = await fetch(`${API_BASE_URL}/parse-booking-intent`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: message })
@@ -190,7 +193,7 @@ async function searchCity(message) {
   msgInput.disabled = true;
 
   try {
-    const response = await fetch("http://127.0.0.1:5000/chat", {
+    const response = await fetch(`${API_BASE_URL}/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: message, session_id: getSessionId() })
@@ -357,7 +360,7 @@ async function fetchPlaceDetails() {
     console.log("[DEBUG] selectedCity:", bookingState.selectedCity);
     console.log("[DEBUG] selectedPlace:", bookingState.selectedPlace);
     
-    const response = await fetch("http://127.0.0.1:5000/place-details", {
+    const response = await fetch(`${API_BASE_URL}/place-details`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
@@ -1312,7 +1315,7 @@ async function proceedToPayment(totalPrice) {
   
   try {
     // Create Razorpay order
-    const response = await fetch('http://127.0.0.1:5000/create-razorpay-order', {
+    const response = await fetch(`${API_BASE_URL}/create-razorpay-order`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1369,7 +1372,7 @@ async function verifyPayment(response, orderId) {
   try {
     const totalPrice = bookingState.ticketPrice * bookingState.userDetails.tickets;
     
-    const verifyResponse = await fetch('http://127.0.0.1:5000/verify-payment', {
+    const verifyResponse = await fetch(`${API_BASE_URL}/verify-payment`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1648,7 +1651,7 @@ async function convertToSpeech(text, waitForCompletion = false) {
       
       console.log(`Converting to speech (${currentTTSLanguage}): ${text.substring(0, 50)}...`);
       
-      const response = await fetch('http://127.0.0.1:5000/text-to-speech', {
+      const response = await fetch(`${API_BASE_URL}/text-to-speech`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
