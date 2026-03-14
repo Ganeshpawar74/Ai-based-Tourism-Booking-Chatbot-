@@ -257,6 +257,14 @@ function addMessage(text, isUser) {
   setTimeout(() => {
     chatbox.scrollTop = chatbox.scrollHeight;
   }, 50);
+  
+  // Auto-read bot messages when TTS is enabled
+  if (!isUser && isAutoReadingEnabled) {
+    setTimeout(() => {
+      console.log('Auto-reading new bot message...');
+      convertToSpeech(text, false);
+    }, 500);
+  }
 }
 
 // ===== STEP 1: PLACE SELECTION (CLICKABLE BUTTONS - NAMES ONLY) =====
@@ -1528,6 +1536,7 @@ function toggleMenu() {
 // ===== TEXT-TO-SPEECH FUNCTIONS =====
 let currentTTSLanguage = 'en'; // Default language is English
 let lastMessageText = ''; // Store last bot message for TTS on demand
+let isAutoReadingEnabled = false; // Flag to enable auto-reading
 
 // Language to flag mapping
 const languageFlagMap = {
@@ -1559,6 +1568,7 @@ function toggleLanguageSelector() {
 
 function selectTTSLanguage(lang) {
   currentTTSLanguage = lang;
+  isAutoReadingEnabled = true; // Enable auto-reading
   
   // Update active state
   const langItems = document.querySelectorAll('.language-item-top');
@@ -1578,84 +1588,165 @@ function selectTTSLanguage(lang) {
   
   // Hide selector
   document.getElementById('languageSelectorTop').style.display = 'none';
+  
+  // Read all existing bot messages
+  setTimeout(() => {
+    readAllBotMessages();
+  }, 300);
 }
 
-async function convertToSpeech(text) {
-  try {
-    if (!text || text.trim() === '') {
-      alert('No text to convert to speech');
-      return;
+// Collect all bot messages from chat
+function getAllBotMessages() {
+  const messages = [];
+  const messageElements = document.querySelectorAll('.message.bot');
+  
+  messageElements.forEach(msgDiv => {
+    const contentDiv = msgDiv.querySelector('.message-content');
+    if (contentDiv) {
+      const text = contentDiv.innerText || contentDiv.textContent;
+      if (text && text.trim()) {
+        messages.push(text.trim());
+      }
     }
-    
-    const response = await fetch('http://127.0.0.1:5000/text-to-speech', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        text: text.substring(0, 1000), // Limit to 1000 chars
-        language: currentTTSLanguage
-      })
-    });
-    
-    console.log('TTS Response Status:', response.status);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('TTS Error Response:', errorText);
-      throw new Error(`Server error: ${response.status} - ${errorText}`);
-    }
-    
-    const data = await response.json();
-    console.log('TTS Response:', data);
-    
-    if (data.error) {
-      throw new Error(data.error);
-    }
-    
-    // Play the audio
-    if (data.audio) {
-      playAudio(data.audio);
-    } else {
-      throw new Error('No audio data received');
-    }
-    
-  } catch (error) {
-    console.error('TTS Error:', error);
-    alert(`Text-to-Speech Error: ${error.message}`);
+  });
+  
+  return messages;
+}
+
+// Read all bot messages sequentially
+async function readAllBotMessages() {
+  const messages = getAllBotMessages();
+  
+  if (messages.length === 0) {
+    console.log('No messages to read');
+    return;
   }
+  
+  console.log(`Reading ${messages.length} bot messages in ${currentTTSLanguage}...`);
+  
+  for (let i = 0; i < messages.length; i++) {
+    try {
+      await convertToSpeech(messages[i], true); // true means wait for completion
+      // Add a small delay between messages
+      await new Promise(resolve => setTimeout(resolve, 500));
+    } catch (error) {
+      console.error(`Error reading message ${i + 1}:`, error);
+    }
+  }
+  
+  console.log('✅ Finished reading all messages');
 }
 
-function playAudio(audioBase64) {
+async function convertToSpeech(text, waitForCompletion = false) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      if (!text || text.trim() === '') {
+        console.log('No text to convert to speech');
+        resolve();
+        return;
+      }
+      
+      console.log(`Converting to speech (${currentTTSLanguage}): ${text.substring(0, 50)}...`);
+      
+      const response = await fetch('http://127.0.0.1:5000/text-to-speech', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: text.substring(0, 2000), // Increased to 2000 chars for longer messages
+          language: currentTTSLanguage
+        })
+      });
+      
+      console.log('TTS Response Status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('TTS Error Response:', errorText);
+        throw new Error(`Server error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('TTS Response received, audio data length:', data.audio ? data.audio.length : 0);
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      // Play the audio
+      if (data.audio) {
+        playAudio(data.audio, waitForCompletion, resolve);
+      } else {
+        throw new Error('No audio data received from server');
+      }
+      
+    } catch (error) {
+      console.error('TTS Error:', error);
+      resolve(); // Continue with next message even if one fails
+    }
+  });
+}
+
+function playAudio(audioBase64, waitForCompletion = false, callback = null) {
   try {
     // Create audio element
-    const audio = new Audio('data:audio/mpeg;base64,' + audioBase64);
+    const audio = new Audio();
     
-    // Add event listeners
-    audio.onplay = () => {
-      console.log('Audio playing...');
+    // Set up the audio data URL
+    try {
+      audio.src = 'data:audio/mpeg;base64,' + audioBase64;
+    } catch (e) {
+      console.error('Error setting audio src:', e);
+    }
+    
+    console.log('Playing audio, duration will be known after loading...');
+    
+    // Track when audio ends
+    const onAudioEnd = () => {
+      console.log('Audio finished playing');
+      audio.removeEventListener('ended', onAudioEnd);
+      audio.removeEventListener('error', onAudioError);
+      
+      if (waitForCompletion && callback) {
+        callback();
+      }
     };
     
-    audio.onended = () => {
-      console.log('Audio finished');
-    };
-    
-    audio.onerror = (error) => {
+    const onAudioError = (error) => {
       console.error('Audio playback error:', error);
-      alert('Could not play audio. Try again.');
+      audio.removeEventListener('ended', onAudioEnd);
+      audio.removeEventListener('error', onAudioError);
+      
+      if (waitForCompletion && callback) {
+        callback();
+      }
     };
+    
+    audio.addEventListener('ended', onAudioEnd);
+    audio.addEventListener('error', onAudioError);
+    
+    // Set volume
+    audio.volume = 1.0;
     
     // Play audio
-    audio.play().then(() => {
-      console.log('Audio started successfully');
-    }).catch(error => {
-      console.error('Audio play error:', error);
-      alert('Could not play audio: ' + error.message);
-    });
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        console.log('Audio playback started successfully');
+      }).catch(error => {
+        console.error('Audio play promise rejected:', error);
+        if (waitForCompletion && callback) {
+          callback();
+        }
+      });
+    }
     
   } catch (error) {
     console.error('Audio setup error:', error);
-    alert('Error setting up audio: ' + error.message);
+    if (waitForCompletion && callback) {
+      callback();
+    }
   }
 }
 

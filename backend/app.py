@@ -965,67 +965,76 @@ def text_to_speech():
     """Convert text to speech using ElevenLabs API"""
     try:
         from elevenlabs.client import ElevenLabs
-        from elevenlabs import VoiceSettings
         
         data = request.json
         text = data.get('text', '')
         language = data.get('language', 'en')
         
-        if not text:
+        if not text or text.strip() == '':
             return jsonify({'success': False, 'error': 'No text provided'}), 400
         
-        # Language to voice ID mapping for ElevenLabs
+        api_key = config.ELEVENLABS_API_KEY
+        if not api_key:
+            logger.error("ElevenLabs API key not configured")
+            return jsonify({
+                'success': False,
+                'error': 'ElevenLabs API key not configured. Set ELEVENLABS_API_KEY environment variable.'
+            }), 500
+        
+        # Language to voice ID mapping for ElevenLabs (using standard voices)
         voice_mapping = {
             'en': '21m00Tcm4TlvDq8ikWAM',      # Rachel - English
-            'hi': 'JBFqnCBsd6RMkjVY20Pi',      # Hindi voice
-            'es': 'MF3mGyEYCl7XYWbV7PZT',      # Spanish voice
-            'fr': 'EXAVITQu4vr4xnSDxMaL',      # French voice
-            'de': 'ConH5VHP75mnqn7WZ1b5',      # German voice
-            'it': 'pMsXgVXv3BLzUgSXRsSj',      # Italian voice
-            'pt': 'AxWn7nlppJ2Pkchs5XzL',      # Portuguese voice
-            'ja': 'Z2hwrXzuQe845blQCy59',      # Japanese voice
-            'zh': 'yoZ06aMxZJJ28mfd3POQ',      # Chinese voice
-            'ar': 'OG5ORT7Hg21Z5YYcBK99',      # Arabic voice
+            'hi': 'V4XiGx0BI0zzYLQKVBL2',      # Hindi voice
+            'es': 'l3Phc0Rm47gJ1jEqEk1s',      # Spanish voice
+            'fr': '2rVw8GWvXZe0o7J8ydnU',      # French voice
+            'de': 'B7EfNfKn9LjKQpHJ8tGm',      # German voice  
+            'it': 'QjyMKvKVlKKcLQb0ZkqF',      # Italian voice
+            'pt': 'rnSAGNBW1YaSt2gzuC8c',      # Portuguese voice
+            'ja': 'pnhwF5rk5pE0W5V8LgbA',      # Japanese voice
+            'zh': 'dZD5sBXd24Uh7PkNJfFB',      # Chinese voice
+            'ar': 'Cgw0CtWEJUhCGi-oXL5h',      # Arabic voice
         }
         
         voice_id = voice_mapping.get(language, '21m00Tcm4TlvDq8ikWAM')  # Default to English
         
-        api_key = config.ELEVENLABS_API_KEY
-        if not api_key:
-            return jsonify({
-                'success': False,
-                'error': 'ElevenLabs API key not configured'
-            }), 500
-        
-        logger.info(f"Converting text to speech: Language={language}, Voice={voice_id}")
+        logger.info(f"TTS Request - Language: {language}, Voice: {voice_id}, Text length: {len(text)}")
         
         # Initialize ElevenLabs client
         client = ElevenLabs(api_key=api_key)
         
-        # Generate audio
-        audio = client.generate(
-            text=text,
+        # Generate audio using the multilingual model
+        audio_generator = client.generate(
+            text=text[:2000],  # Limit to 2000 characters
             voice=voice_id,
-            model="eleven_monolingual_v1"
+            model="eleven_multilingual_v2"  # Use multilingual model for better language support
         )
+        
+        # Collect audio bytes
+        audio_bytes = b''.join(audio_generator)
+        
+        if not audio_bytes:
+            logger.error("No audio data generated")
+            return jsonify({
+                'success': False,
+                'error': 'Failed to generate audio'
+            }), 500
         
         # Convert audio to base64
         import base64
-        from io import BytesIO
-        
-        audio_bytes = b''.join(audio)
         audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
         
-        logger.info("✅ TTS conversion successful")
+        logger.info(f"✅ TTS conversion successful - Generated {len(audio_bytes)} bytes of audio")
         
         return jsonify({
             'success': True,
-            'audio': audio_base64,  # Return just the base64, without data URI prefix
-            'message': 'Audio generated successfully'
+            'audio': audio_base64,
+            'message': 'Audio generated successfully',
+            'language': language,
+            'voice_id': voice_id
         }), 200
         
-    except ImportError:
-        logger.error("ElevenLabs library not installed")
+    except ImportError as e:
+        logger.error(f"ElevenLabs library not installed: {str(e)}")
         return jsonify({
             'success': False,
             'error': 'ElevenLabs library not installed. Run: pip install elevenlabs'
