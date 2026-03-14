@@ -191,6 +191,138 @@ TOURIST_PLACES_DB = {
             {"name": "Chiang Mai National Museum", "description": "A museum showcasing the history and culture of Northern Thailand, featuring artifacts from various periods including bronze drums and ancient relics."},
             {"name": "Wat Chiang Man", "description": "The oldest temple in Chiang Mai built in 1296, featuring traditional Northern Thai temple architecture. Known for its ancient Buddha images and peaceful atmosphere."}
         ]
+    },
+    "pune": {
+        "name": "Pune",
+        "emoji": "🏢",
+        "description": "Cultural capital of Maharashtra, known for educational institutions and historical sites",
+        "places": [
+            {"name": "Aga Khan Palace", "description": "A historic palace built in 1892, showcasing British-Indian architecture. Important historical landmark where Mahatma Gandhi was imprisoned during the Quit India Movement."},
+            {"name": "Shaniwarwada Fort", "description": "A 18th-century fort built by the Peshwas, featuring stunning architecture with stucco work and intricate decorations. A symbol of Marathi power and cultural heritage."},
+            {"name": "Osho Ashram (Rajneesh Ashram)", "description": "A spiritual ashram dedicated to meditation and personal transformation, featuring beautiful gardens and meditation halls. Popular destination for spiritual seekers worldwide."},
+            {"name": "National War Museum", "description": "A comprehensive museum showcasing India's military history with weapons, artifacts, and memorabilia from various wars. Educational and historical significance."},
+            {"name": "Pataleshwar Cave Temple", "description": "An 8th-century rock-cut cave temple dedicated to Lord Shiva, featuring intricate stone carvings and sculptures. A rare example of ancient rock-cut architecture in Pune."}
+        ]
+    },
+    "nashik": {
+        "name": "Nashik",
+        "emoji": "🙏",
+        "description": "Holy city on the banks of Godavari River, famous for temples and pilgrimage sites",
+        "places": [
+            {"name": "Trimbakeshwar Temple", "description": "One of the 12 Jyotirlingas dedicated to Lord Shiva, located on the banks of Godavari River. Ancient temple with spiritual significance and elaborate architecture."},
+            {"name": "Kalaram Temple", "description": "A prominent Hindu temple dedicated to Lord Ram, built during the Peshwa period. Features beautiful architecture with copper-plated interiors and spiritual ambiance."},
+            {"name": "Godavari Gorge & Dam", "description": "A scenic gorge formed by the Godavari River with beautiful waterfalls and natural landscape. Popular for photography, trekking, and picnicking."},
+            {"name": "Sula Vineyards", "description": "India's premium wine estate offering vineyard tours, wine tasting, and dining experiences. Set amidst picturesque vineyards with modern facilities."},
+            {"name": "Sindhan Valley Caves", "description": "Ancient caves showcasing Buddhist architecture and sculptures from the Bahmani period. Off-the-beaten-path destination for history enthusiasts."}
+        ]
+    },
+    "aurangabad": {
+        "name": "Aurangabad",
+        "emoji": "🏛️",
+        "description": "Gateway to Ajanta and Ellora Caves, UNESCO World Heritage Sites",
+        "places": [
+            {"name": "Ajanta Caves", "description": "30 ancient Buddhist cave temples carved into rock cliffs dating back to 2nd century BCE, featuring extraordinary murals and sculptures. UNESCO World Heritage Site."},
+            {"name": "Ellora Caves", "description": "34 magnificent rock-cut caves showcasing Buddhist, Hindu, and Jain architecture spanning 5-7 centuries. Features the impressive Kailash Temple carved from a single rock."},
+            {"name": "Bibi Ka Maqbara", "description": "A 17th-century marble mausoleum built by Aurangzeb for his first wife, often called the Taj Mahal of Deccan. Features Indo-Islamic architecture with beautiful gardens."},
+            {"name": "Panchakki (Water Mill)", "description": "A 17th-century historic water mill with an underground waterway providing water for irrigation. Showcases the engineering prowess of the Mughal era."},
+            {"name": "Grishneshwar Temple", "description": "One of the 12 Jyotirlingas dedicated to Lord Shiva, located near Ellora Caves. Features architectural significance and spiritual importance for pilgrims."}
+        ]
+    },
+    "lucknow": {
+        "name": "Lucknow",
+        "emoji": "🏰",
+        "description": "City of Nawabs, known for Mughal architecture and cultural heritage",
+        "places": [
+            {"name": "Bara Imambara Complex", "description": "A grand structure built in 1784 featuring Mughal architecture with intricate designs, underground labyrinth, and a beautiful courtyard. A masterpiece of 18th-century construction."},
+            {"name": "Chota Imambara", "description": "A smaller but ornate imambara built in 1838, featuring exquisite Mughal design with golden decorations and marble inlays. Showcases the opulence of Nawabi era."},
+            {"name": "Rumi Darwaza (Turkish Gate)", "description": "A historic 66-meter high gate built in 1784, featuring Ottoman architecture. Landmark of Lucknow representing the city's cultural amalgamation."},
+            {"name": "Dr. Ambedkar Museum (Moti Mahal)", "description": "A grand palace converted into a museum showcasing historical documents, artifacts, and memorabilia from India's freedom struggle and social reform movements."},
+            {"name": "Lucknow Zoo Nawab Wajid Ali Shah", "description": "One of India's oldest zoos established in 1921, housing diverse wildlife including rare species. Features beautiful landscaping and educational exhibits."}
+        ]
+    },
+    "jaisalmer": {
+        "name": "Jaisalmer",
+        "emoji": "🏜️",
+        "description": "Golden City of Rajasthan, famous for desert forts and sand dunes",
+        "places": [
+            {"name": "Jaisalmer Fort", "description": "A 12th-century massive sandstone fort rising from the desert, featuring intricate carvings and multiple gates. One of India's largest and most impressive forts."},
+            {"name": "Sam Sand Dunes", "description": "A vast expanse of golden sand dunes offering camel rides, jeep safaris, and desert camping. Popular for witnessing sunset and sunrise in the Thar Desert."},
+            {"name": "Gadisar Lake", "description": "An artificial lake built in the 14th century, featuring beautiful temples and ghats surrounding it. Scenic spot for bird watching and photography."},
+            {"name": "Jain Temples Complex", "description": "A group of beautifully carved Jain temples dating back to 12th-15th centuries, showcasing intricate marble and stone work. Significant pilgrimage site for Jains."},
+            {"name": "Ludurva Jain Temple", "description": "Ancient Jain temple located near Jaisalmer, featuring exquisite carvings and sculpture work. Important religious site with peaceful ambiance."}
+        ]
+    },
+    "pushkar": {
+        "name": "Pushkar",
+        "emoji": "🙏",
+        "description": "Sacred pilgrimage site with temple, lake, and annual camel fair",
+        "places": [
+            {"name": "Pushkar Lake & Ghats", "description": "A sacred lake surrounded by 52 ghats and 500 temples, believed to have been created by Lord Brahma. Pilgrims bathe in these holy waters for spiritual purification."},
+            {"name": "Brahma Temple", "description": "One of the few temples dedicated to Lord Brahma in the world, featuring white marble architecture. Ancient and spiritually significant pilgrimage destination."},
+            {"name": "Pushkar Camel Fair", "description": "Annual international fair held in October-November, featuring camel trading, contests, folk performances, and cultural celebrations. Major tourist and cultural event."},
+            {"name": "Savitri Temple", "description": "A temple dedicated to Goddess Savitri perched on a hilltop, offering panoramic views of Pushkar town. Accessible by cable car or hiking trail."},
+            {"name": "Apteshwar Temple", "description": "An ancient fire temple showcasing Zoroastrian and ancient Indian architecture. Unique religious and historical significance."}
+        ]
+    },
+    "mount abu": {
+        "name": "Mount Abu",
+        "emoji": "⛰️",
+        "description": "Only hill station in Rajasthan, famous for temples and scenic beauty",
+        "places": [
+            {"name": "Dilwara Jain Temples", "description": "Stunning jain temples with intricate marble carvings and architectural details, built between 11th-13th centuries. UNESCO World Heritage Site showcasing the pinnacle of Jain architecture."},
+            {"name": "Nakki Lake", "description": "A scenic artificial lake surrounded by hills, offering boating and scenic views. Popular spot for evening walks and family outings."},
+            {"name": "Peace Park (Brahma Kumaris Spiritual University)", "description": "A spiritual campus offering meditation classes, courses, and peaceful environment. Known for its spiritual teachings and international community."},
+            {"name": "Sunset Point", "description": "A popular viewpoint offering stunning panoramic views of the surrounding landscape and sunset. Best spot for photography and romantic experiences."},
+            {"name": "Honeymoon Point", "description": "A scenic viewpoint nestled in nature offering beautiful views of the valley and sunset. Popular destination for couples and nature lovers."}
+        ]
+    },
+    "kanyakumari": {
+        "name": "Kanyakumari",
+        "emoji": "🌊",
+        "description": "Southernmost point of India where three seas meet, known for temples and sunrise",
+        "places": [
+            {"name": "Vivekananda Rock Memorial", "description": "A memorial built on a rock in the sea dedicated to Swami Vivekananda, featuring beautiful architecture and spiritual significance. Accessible by boat with panoramic sea views."},
+            {"name": "Kumari Amman Temple", "description": "An ancient and sacred temple dedicated to Goddess Kumari, one of the Shakti Peethas. Significant pilgrimage site with beautiful temple architecture."},
+            {"name": "Thiruvalluvar Statue", "description": "A 133-foot tall statue of the ancient Tamil poet Thiruvalluvar standing in the sea. Artistic masterpiece and symbol of Tamil literary heritage."},
+            {"name": "Padmanabhapuram Palace", "description": "A historic 16th-century wooden palace showcasing traditional Kerala architecture with intricate carvings and traditional art forms. Heritage site with museum exhibits."},
+            {"name": "Sunset Point Viewpoint", "description": "A scenic spot where visitors can witness the sunset over the Arabian Sea, Indian Ocean, and Bay of Bengal. Popular for photography and peaceful contemplation."}
+        ]
+    },
+    "hampi": {
+        "name": "Hampi",
+        "emoji": "🏛️",
+        "description": "UNESCO World Heritage Site with ruins of ancient Vijayanagara Empire",
+        "places": [
+            {"name": "Virupaksha Temple", "description": "A 15th-century temple dedicated to Lord Shiva, featuring intricate stone carvings and towering gopuram. One of the oldest and most important temples in Hampi."},
+            {"name": "Krishana Temple", "description": "A 16th-century temple with ornate carvings and sculptures, featuring beautiful dravidian architecture. Showcases the religious significance during the Vijayanagara period."},
+            {"name": "Vittala Temple", "description": "A magnificent temple complex featuring the iconic Stone Chariot, intricate carvings, and monolithic pillars. Architectural marvel of the Vijayanagara period."},
+            {"name": "Hemakuta Hill", "description": "A hilltop featuring ancient temples and offering panoramic views of Hampi ruins and surrounding landscape. Popular spot for trekking and photography."},
+            {"name": "Bazaar Street Walk", "description": "Ancient marketplace ruins showcasing the commercial heritage of Vijayanagara Empire. Scenic walk through history with shops, dharamshalas, and ancient structures."}
+        ]
+    },
+    "darjeeling": {
+        "name": "Darjeeling",
+        "emoji": "🏔️",
+        "description": "Hill station in West Bengal, famous for tea gardens and Himalayan views",
+        "places": [
+            {"name": "Kanyeshwar Temple", "description": "An ancient temple perched on a hilltop offering panoramic views of snow-capped Himalayas and surrounding valleys. Spiritual site with natural beauty."},
+            {"name": "Darjeeling Himalayan Railway", "description": "A historic narrow-gauge railway built in 1881, offering scenic train rides through tea gardens and misty hills. UNESCO World Heritage Site called 'Toy Train'."},
+            {"name": "Tiger Hill", "description": "A scenic viewpoint offering sunrise views of Kanchenjunga mountain and surrounding landscape. Popular spot for photography and nature appreciation."},
+            {"name": "Japanese Peace Pagoda", "description": "A white monument built for World Peace by Japanese Buddhist monks, featuring peaceful gardens and views of Himalayas. Spiritual and scenic destination."},
+            {"name": "Padmaja Naidu Himalayan Zoological Park", "description": "A high-altitude zoo featuring rare Himalayan animals like red pandas and snow leopards. Conservation and research facility offering wildlife education."}
+        ]
+    },
+    "khajuraho": {
+        "name": "Khajuraho",
+        "emoji": "🏛️",
+        "description": "UNESCO World Heritage Site with medieval temples featuring intricate sculptures",
+        "places": [
+            {"name": "Kandariya Mahadev Temple", "description": "The largest medieval temple complex at Khajuraho, built in 1000 CE. Features intricate stone carvings, sculptures, and architectural excellence of the Chandella dynasty."},
+            {"name": "Lakshmana Temple", "description": "A 10th-century temple dedicated to Lord Lakshman, featuring beautiful external carvings and sculptures. Showcases the architectural perfection of the Chandella era."},
+            {"name": "Chausath Yogini Temple", "description": "One of the oldest temples at Khajuraho dedicated to 64 yoginis, featuring unique circular architecture. Significant archaeological and religious site."},
+            {"name": "Khajuraho Sculptures Museum", "description": "A museum displaying stone sculptures and architectural fragments from the medieval temples. Provides insights into the artistic and cultural heritage of Khajuraho."},
+            {"name": "Khajuraho Dance Festival", "description": "An annual cultural festival showcasing classical Indian dance forms performed at temple premises. Important event celebrating Indian artistic traditions."}
+        ]
     }
 }
 
@@ -215,7 +347,18 @@ def get_city_name_variations(city_name):
         "udaipur": ["udaipur", "city of lakes"],
         "jodhpur": ["jodhpur", "blue city"],
         "mysore": ["mysore", "city of palaces"],
-        "chiang mai": ["chiang mai", "chiangmai"]
+        "chiang mai": ["chiang mai", "chiangmai"],
+        "pune": ["pune", "poona", "cultural capital"],
+        "nashik": ["nashik", "nasik", "holy city"],
+        "aurangabad": ["aurangabad", "ajanta caves", "ellora caves"],
+        "lucknow": ["lucknow", "city of nawabs", "lucknow city"],
+        "jaisalmer": ["jaisalmer", "golden city", "desert city"],
+        "pushkar": ["pushkar", "pushkar lake", "camel fair"],
+        "mount abu": ["mount abu", "abu"],
+        "kanyakumari": ["kanyakumari", "cape comorin", "southernmost"],
+        "hampi": ["hampi", "vijayanagara"],
+        "darjeeling": ["darjeeling", "darjiling", "toy train"],
+        "khajuraho": ["khajuraho", "khajurajo"]
     }
     return variations.get(city_name.lower(), [city_name.lower()])
 
