@@ -2,7 +2,7 @@ print("[DEBUG] app.py is loading NOW - FRESH RUN")
 
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-from config import config
+from backend.config import config
 print("[DEBUG] config imported")
 import os
 import uuid
