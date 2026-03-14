@@ -12,7 +12,7 @@ import traceback
 from datetime import datetime
 
 # Direct import from tourist database - NO Gemini API
-from tourist_database import find_city_by_name, get_formatted_places_response, get_place_details, TOURIST_PLACES_DB
+from backend.tourist_database import find_city_by_name, get_formatted_places_response, get_place_details, TOURIST_PLACES_DB
 from payment import create_razorpay_order, verify_payment_signature
 from ticket_generator import generate_ticket, generate_qr_code_base64
 
