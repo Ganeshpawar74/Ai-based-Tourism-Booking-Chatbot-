@@ -246,47 +246,6 @@ function addMessage(text, isUser) {
   contentDiv.innerHTML = text.replace(/\n/g, '<br>');
   wrapper.appendChild(contentDiv);
   
-  // Add speaker button for bot messages (for TTS)
-  if (!isUser) {
-    const speakerContainer = document.createElement('div');
-    speakerContainer.style.cssText = 'display: flex; align-items: center; gap: 8px; margin-top: 8px;';
-    
-    const speakerBtn = document.createElement('button');
-    speakerBtn.className = 'message-speaker';
-    speakerBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
-    speakerBtn.title = `Click to hear this in ${getCurrentLanguageName(currentTTSLanguage)}`;
-    speakerBtn.style.cssText = `
-      background: none;
-      border: 1px solid #128C7E;
-      color: #128C7E;
-      border-radius: 50%;
-      width: 32px;
-      height: 32px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      transition: all 0.2s ease;
-      padding: 0;
-    `;
-    speakerBtn.onmouseover = () => {
-      speakerBtn.background = '#f0f0f0';
-      speakerBtn.style.background = '#f0f0f0';
-    };
-    speakerBtn.onmouseout = () => {
-      speakerBtn.style.background = 'none';
-    };
-    speakerBtn.onclick = () => {
-      // Extract plain text from HTML
-      const plainText = contentDiv.innerText || text.replace(/<[^>]*>/g, '');
-      convertToSpeech(plainText, messageDiv);
-    };
-    
-    speakerContainer.appendChild(speakerBtn);
-    wrapper.appendChild(speakerContainer);
-  }
-  
   const timeDiv = document.createElement('div');
   timeDiv.className = 'message-time';
   timeDiv.textContent = getCurrentTime();
@@ -298,23 +257,6 @@ function addMessage(text, isUser) {
   setTimeout(() => {
     chatbox.scrollTop = chatbox.scrollHeight;
   }, 50);
-}
-
-// Helper function to get language name
-function getCurrentLanguageName(lang) {
-  const langNames = {
-    en: 'English',
-    hi: 'Hindi',
-    es: 'Spanish',
-    fr: 'French',
-    de: 'German',
-    it: 'Italian',
-    pt: 'Portuguese',
-    ja: 'Japanese',
-    zh: 'Chinese',
-    ar: 'Arabic'
-  };
-  return langNames[lang] || 'English';
 }
 
 // ===== STEP 1: PLACE SELECTION (CLICKABLE BUTTONS - NAMES ONLY) =====
@@ -1585,9 +1527,24 @@ function toggleMenu() {
 
 // ===== TEXT-TO-SPEECH FUNCTIONS =====
 let currentTTSLanguage = 'en'; // Default language is English
+let lastMessageText = ''; // Store last bot message for TTS on demand
+
+// Language to flag mapping
+const languageFlagMap = {
+  'en': '🇺🇸',
+  'hi': '🇮🇳',
+  'es': '🇪🇸',
+  'fr': '🇫🇷',
+  'de': '🇩🇪',
+  'it': '🇮🇹',
+  'pt': '🇵🇹',
+  'ja': '🇯🇵',
+  'zh': '🇨🇳',
+  'ar': '🇸🇦'
+};
 
 function toggleLanguageSelector() {
-  const selector = document.getElementById('languageSelector');
+  const selector = document.getElementById('languageSelectorTop');
   if (!selector) {
     console.error('Language selector not found');
     return;
@@ -1604,7 +1561,7 @@ function selectTTSLanguage(lang) {
   currentTTSLanguage = lang;
   
   // Update active state
-  const langItems = document.querySelectorAll('.language-item');
+  const langItems = document.querySelectorAll('.language-item-top');
   langItems.forEach(item => {
     if (item.dataset.lang === lang) {
       item.classList.add('active');
@@ -1613,42 +1570,21 @@ function selectTTSLanguage(lang) {
     }
   });
   
+  // Update flag in header
+  const flagElement = document.getElementById('currentLanguageFlag');
+  if (flagElement) {
+    flagElement.textContent = languageFlagMap[lang] || '🇺🇸';
+  }
+  
   // Hide selector
-  document.getElementById('languageSelector').style.display = 'none';
-  
-  // Show notification
-  const langNames = {
-    en: 'English',
-    hi: 'Hindi',
-    es: 'Spanish',
-    fr: 'French',
-    de: 'German',
-    it: 'Italian',
-    pt: 'Portuguese',
-    ja: 'Japanese',
-    zh: 'Chinese',
-    ar: 'Arabic'
-  };
-  
-  msgInput.placeholder = `Text-to-Speech enabled: ${langNames[lang]}`;
-  msgInput.style.color = '#128C7E';
-  msgInput.style.fontStyle = 'italic';
-  
-  // Reset after 3 seconds
-  setTimeout(() => {
-    msgInput.placeholder = 'Type a message...';
-    msgInput.style.color = '#333';
-    msgInput.style.fontStyle = 'normal';
-  }, 3000);
+  document.getElementById('languageSelectorTop').style.display = 'none';
 }
 
-async function convertToSpeech(text, messageElement) {
+async function convertToSpeech(text) {
   try {
-    // Show loading indicator on the speaker button if available
-    const speakerBtn = messageElement.querySelector('.message-speaker');
-    if (speakerBtn) {
-      speakerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-      speakerBtn.disabled = true;
+    if (!text || text.trim() === '') {
+      alert('No text to convert to speech');
+      return;
     }
     
     const response = await fetch('http://127.0.0.1:5000/text-to-speech', {
@@ -1657,86 +1593,69 @@ async function convertToSpeech(text, messageElement) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        text: text,
+        text: text.substring(0, 1000), // Limit to 1000 chars
         language: currentTTSLanguage
       })
     });
     
+    console.log('TTS Response Status:', response.status);
+    
     if (!response.ok) {
-      throw new Error(`Server error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('TTS Error Response:', errorText);
+      throw new Error(`Server error: ${response.status} - ${errorText}`);
     }
     
     const data = await response.json();
+    console.log('TTS Response:', data);
     
     if (data.error) {
       throw new Error(data.error);
     }
     
     // Play the audio
-    playAudio(data.audio, messageElement, speakerBtn);
+    if (data.audio) {
+      playAudio(data.audio);
+    } else {
+      throw new Error('No audio data received');
+    }
     
   } catch (error) {
     console.error('TTS Error:', error);
-    
-    if (messageElement.querySelector('.message-speaker')) {
-      const speakerBtn = messageElement.querySelector('.message-speaker');
-      speakerBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
-      speakerBtn.disabled = false;
-      speakerBtn.title = 'Error: Could not generate audio';
-      speakerBtn.style.opacity = '0.5';
-    }
-    
     alert(`Text-to-Speech Error: ${error.message}`);
   }
 }
 
-function playAudio(audioBase64, messageElement, speakerBtn) {
+function playAudio(audioBase64) {
   try {
-    // Convert base64 to audio blob
-    const audioBytes = atob(audioBase64);
-    const audioArray = new Uint8Array(audioBytes.length);
-    for (let i = 0; i < audioBytes.length; i++) {
-      audioArray[i] = audioBytes.charCodeAt(i);
-    }
-    
-    const audioBlob = new Blob([audioArray], { type: 'audio/mpeg' });
-    const audioUrl = URL.createObjectURL(audioBlob);
-    
     // Create audio element
-    const audio = new Audio(audioUrl);
+    const audio = new Audio('data:audio/mpeg;base64,' + audioBase64);
     
-    // Update button to show playing state
-    if (speakerBtn) {
-      speakerBtn.innerHTML = '<i class="fas fa-pause"></i>';
-      speakerBtn.style.background = '#25D366';
-    }
+    // Add event listeners
+    audio.onplay = () => {
+      console.log('Audio playing...');
+    };
     
-    // Reset button when audio ends
     audio.onended = () => {
-      if (speakerBtn) {
-        speakerBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
-        speakerBtn.style.background = '';
-        speakerBtn.disabled = false;
-      }
-      URL.revokeObjectURL(audioUrl);
+      console.log('Audio finished');
+    };
+    
+    audio.onerror = (error) => {
+      console.error('Audio playback error:', error);
+      alert('Could not play audio. Try again.');
     };
     
     // Play audio
-    audio.play().catch(error => {
-      console.error('Audio playback error:', error);
-      if (speakerBtn) {
-        speakerBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
-        speakerBtn.style.background = '';
-        speakerBtn.disabled = false;
-      }
+    audio.play().then(() => {
+      console.log('Audio started successfully');
+    }).catch(error => {
+      console.error('Audio play error:', error);
+      alert('Could not play audio: ' + error.message);
     });
     
   } catch (error) {
     console.error('Audio setup error:', error);
-    if (speakerBtn) {
-      speakerBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
-      speakerBtn.disabled = false;
-    }
+    alert('Error setting up audio: ' + error.message);
   }
 }
 
@@ -1750,7 +1669,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   
   // Initialize language selector
-  const langItems = document.querySelectorAll('.language-item');
+  const langItems = document.querySelectorAll('.language-item-top');
   langItems.forEach(item => {
     if (item.dataset.lang === 'en') {
       item.classList.add('active');
@@ -1761,9 +1680,15 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   
   // Hide language selector on page load
-  const langSelector = document.getElementById('languageSelector');
+  const langSelector = document.getElementById('languageSelectorTop');
   if (langSelector) {
     langSelector.style.display = 'none';
+  }
+  
+  // Set initial language flag
+  const flagElement = document.getElementById('currentLanguageFlag');
+  if (flagElement) {
+    flagElement.textContent = languageFlagMap['en'];
   }
   
   // Initialize with welcome message

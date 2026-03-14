@@ -1020,7 +1020,7 @@ def text_to_speech():
         
         return jsonify({
             'success': True,
-            'audio': f'data:audio/mpeg;base64,{audio_base64}',
+            'audio': audio_base64,  # Return just the base64, without data URI prefix
             'message': 'Audio generated successfully'
         }), 200
         
