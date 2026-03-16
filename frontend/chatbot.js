@@ -1,8 +1,8 @@
 // Tourism Chatbot - Complete Interactive Multi-step Booking Workflow
 // New Flow: Location -> Places (buttons) -> Description + Time -> Date -> Confirmation -> BOOK NOW -> Form -> Summary -> Payment
 
-// API Configuration
-const API_BASE_URL = 'http://127.0.0.1:10000';
+// API Configuration - Dynamic based on environment
+const API_BASE_URL = window.location.origin;
 
 const chatbox = document.getElementById('chatbox');
 const msgInput = document.getElementById('msg');
