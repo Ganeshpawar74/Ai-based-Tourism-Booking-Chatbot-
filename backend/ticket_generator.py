@@ -2,7 +2,7 @@ import qrcode
 import uuid
 import base64
 from io import BytesIO
-from config import config
+from backend.config import config
 
 def generate_ticket(name, place, date, time):
     """Generate a ticket with QR code"""

@@ -1443,7 +1443,7 @@ function displayQRCode(qrCodeBase64) {
   const summaryHTML = `
     <b style="font-size: 15px; color: #128C7E;">📊 YOUR BOOKING DETAILS</b>
     <div style="margin-top: 10px; font-size: 13px; line-height: 1.8; color: #333;">
-      <b>👤 Passenger:</b> ${bookingState.userDetails.name}<br>
+      <b>👤 Name :</b> ${bookingState.userDetails.name}<br>
       <b>📧 Email:</b> ${bookingState.userDetails.email}<br>
       <b>📞 Phone:</b> ${bookingState.userDetails.phone}<br>
       <br>

@@ -1,9 +1,10 @@
 import razorpay
+import pkg_resources
 import hmac
 import hashlib
 import logging
 import json
-from config import config
+from backend.config import config
 from dotenv import load_dotenv
 from datetime import datetime
 
