@@ -260,6 +260,16 @@ function addMessage(text, isUser) {
   setTimeout(() => {
     chatbox.scrollTop = chatbox.scrollHeight;
   }, 50);
+
+  // If text-to-speech is enabled, enqueue this message and speak it
+  if (ttsEnabled) {
+    const plainText = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    enqueueMessage(plainText, isUser, nextMessageId);
+  }
+
+  // Track message IDs so we don't repeat reading the same message
+  messageDiv.dataset.msgId = nextMessageId;
+  nextMessageId += 1;
 }
 
 // ===== STEP 1: PLACE SELECTION (CLICKABLE BUTTONS - NAMES ONLY) =====
@@ -327,6 +337,16 @@ function addPlaceSelectionButtons(places) {
   wrapper.appendChild(timeDiv);
   messageDiv.appendChild(wrapper);
   chatbox.appendChild(messageDiv);
+
+  // Track message IDs so text-to-speech can read this message once
+  messageDiv.dataset.msgId = nextMessageId;
+  nextMessageId += 1;
+
+  // If TTS is enabled, read out the option list
+  if (ttsEnabled) {
+    const optionText = `Choose a place: ${places.join(', ')}`;
+    enqueueMessage(optionText, false, parseInt(messageDiv.dataset.msgId, 10));
+  }
   
   setTimeout(() => {
     chatbox.scrollTop = chatbox.scrollHeight;
@@ -1531,79 +1551,137 @@ function toggleMenu() {
 }
 
 // ===== TEXT-TO-SPEECH FUNCTIONS (Web Speech API) =====
+let ttsEnabled = false;
 let isSpeaking = false;
 let currentUtterance = null;
+let ttsQueue = [];
+
+// Track message IDs to prevent re-reading the same message repeatedly
+let nextMessageId = 0;
+let lastReadMessageId = -1;
+
+// Runtime config (adjust via UI)
+let ttsTargetLang = 'hi-IN'; // default language
+let ttsRate = 1.5; // speaking speed (1.0 = normal)
+let ttsTranslateToHindi = true; // translate to Hindi when using hi-IN
+
+function setTtsLanguage(lang) {
+  ttsTargetLang = lang;
+  ttsTranslateToHindi = lang.startsWith('hi');
+  console.log(`🔈 TTS language set to ${lang} (translate=${ttsTranslateToHindi})`);
+}
+
+function setTtsRate(rate) {
+  ttsRate = rate;
+  console.log(`🔈 TTS speed set to ${rate}`);
+}
 
 // Check if browser supports Web Speech API
-const synth = window.speechSynthesis;
+const synth = window.speechSynthesis || null;
+let availableVoices = [];
+
+function loadVoices() {
+  if (!synth) return;
+  availableVoices = synth.getVoices() || [];
+}
+
+if (synth) {
+  // Some browsers load voices asynchronously
+  loadVoices();
+  if (typeof synth.onvoiceschanged === 'function') {
+    synth.onvoiceschanged = loadVoices;
+  }
+}
 
 function toggleTextToSpeech() {
   const speakerBtn = document.getElementById('speakerBtn');
   
-  if (isSpeaking) {
-    // Stop speaking
+  if (!synth) {
+    alert('Speech synthesis is not supported in this browser.');
+    return;
+  }
+
+  if (ttsEnabled) {
+    // Turn off speech
+    ttsEnabled = false;
     synth.cancel();
+    ttsQueue = [];
     isSpeaking = false;
     speakerBtn.classList.remove('active');
     console.log('🔇 Text-to-speech stopped');
   } else {
-    // Start reading all messages
-    isSpeaking = true;
+    // Turn on speech
+    ttsEnabled = true;
     speakerBtn.classList.add('active');
-    console.log('🔊 Starting text-to-speech');
-    readAllMessages();
+    console.log('🔊 Text-to-speech enabled');
+
+    // Clear any leftover queue and read unread messages
+    ttsQueue = [];
+    enqueueExistingMessages();
+    processTtsQueue();
   }
 }
 
-function readAllMessages() {
-  const messages = [];
+function enqueueExistingMessages() {
   const messageElements = document.querySelectorAll('.message');
-  
   messageElements.forEach(msgDiv => {
+    const msgId = parseInt(msgDiv.dataset.msgId || '-1', 10);
+    if (isNaN(msgId) || msgId <= lastReadMessageId) return;
+
     const contentDiv = msgDiv.querySelector('.message-content');
-    if (contentDiv) {
-      const text = contentDiv.innerText || contentDiv.textContent;
-      if (text && text.trim()) {
-        messages.push({
-          text: text.trim(),
-          isUser: msgDiv.classList.contains('user')
-        });
-      }
-    }
+    if (!contentDiv) return;
+
+    const text = contentDiv.innerText || contentDiv.textContent;
+    if (!text || !text.trim()) return;
+
+    ttsQueue.push({
+      id: msgId,
+      text: text.trim(),
+      isUser: msgDiv.classList.contains('user')
+    });
   });
-  
-  if (messages.length === 0) {
-    alert('No messages to read');
-    isSpeaking = false;
-    document.getElementById('speakerBtn').classList.remove('active');
-    return;
-  }
-  
-  console.log(`📢 Reading ${messages.length} messages...`);
-  readMessageSequentially(messages, 0);
 }
 
-function readMessageSequentially(messages, index) {
-  if (!isSpeaking || index >= messages.length) {
-    isSpeaking = false;
-    document.getElementById('speakerBtn').classList.remove('active');
-    console.log('✅ Finished reading all messages');
-    return;
+function enqueueMessage(text, isUser, msgId) {
+  if (!ttsEnabled) return;
+  if (!text || !text.trim()) return;
+  if (typeof msgId !== 'number') {
+    msgId = nextMessageId++;
   }
-  
-  const message = messages[index];
-  recognizer = null;
-  const prefix = message.isUser ? '👤 User said: ' : '🤖 Bot: ';
-  const textToRead = cleanTextForSpeech(message.text);
-  
-  console.log(`📖 Reading message ${index + 1}/${messages.length}`);
-  
-  speakText(prefix + textToRead, () => {
-    // Move to next message after this one finishes
-    setTimeout(() => {
-      readMessageSequentially(messages, index + 1);
-    }, 500);
-  });
+  if (msgId <= lastReadMessageId) return;
+
+  ttsQueue.push({ id: msgId, text: text.trim(), isUser });
+  processTtsQueue();
+}
+
+async function processTtsQueue() {
+  if (!ttsEnabled || isSpeaking || ttsQueue.length === 0) return;
+
+  isSpeaking = true;
+
+  while (ttsEnabled && ttsQueue.length > 0) {
+    const item = ttsQueue.shift();
+
+    // Only read new messages once
+    if (item.id <= lastReadMessageId) continue;
+
+    const prefix = item.isUser ? 'You said: ' : 'Bot says: ';
+    const textToRead = cleanTextForSpeech(item.text);
+
+    console.log(`📖 Speaking: ${textToRead}`);
+    await speakText(prefix, textToRead);
+
+    lastReadMessageId = item.id;
+
+    // Small pause between messages
+    await new Promise(res => setTimeout(res, 250));
+  }
+
+  isSpeaking = false;
+  if (!ttsEnabled) {
+    document.getElementById('speakerBtn')?.classList.remove('active');
+  }
+  console.log('✅ Finished speaking queued messages');
 }
 
 function cleanTextForSpeech(text) {
@@ -1612,53 +1690,101 @@ function cleanTextForSpeech(text) {
   // Remove extra whitespace
   cleaned = cleaned.replace(/\s+/g, ' ').trim();
   // Remove emojis and special Unicode characters
-  cleaned = cleaned.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F700}-\u{1F77F}]|[\u{1F780}-\u{1F7FF}]|[\u{1F800}-\u{1F8FF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA00}-\u{1FA6F}]|[\u{1FA70}-\u{1FAFF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '');
+  cleaned = cleaned.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F700}-\u{1F77F}]|[\u{1F780}-\u{1F7FF}]|[\u{1F800}-\u{1F8FF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA00}-\u{1FA6F}]|[\u{1FA70}-\u{1FAFF}]|[\u{2300}-\u{23FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '');
   cleaned = cleaned.replace(/\s+/g, ' ').trim();
   return cleaned;
 }
 
-function speakText(text, callback = null) {
-  if (!synth) {
-    console.error('Speech Synthesis API not supported');
-    if (callback) callback();
-    return;
+async function translateToHindi(text) {
+  try {
+    const encoded = encodeURIComponent(text);
+    const url = `https://api.mymemory.translated.net/get?q=${encoded}&langpair=en|hi`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data && data.responseData && data.responseData.translatedText) {
+      return data.responseData.translatedText;
+    }
+  } catch (err) {
+    console.warn('Translation failed, using original text.', err);
   }
-  
-  // Cancel any ongoing speech
-  synth.cancel();
-  
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 0.9;
-  utterance.pitch = 1.0;
-  utterance.volume = 1.0;
-  utterance.lang = 'en-IN'; // Default to Indian English for tourism context
-  
-  // Get available voices
-  const voices = synth.getVoices();
-  if (voices.length > 0) {
-    // Prefer female voice if available
-    const femaleVoice = voices.find(v => v.name.includes('Female')) || 
-                        voices.find(v => v.name.includes('female')) || 
-                        voices[1] || voices[0];
-    utterance.voice = femaleVoice;
+  return text;
+}
+
+function getPreferredVoice() {
+  if (!availableVoices || availableVoices.length === 0) return null;
+
+  // Prefer voices based on target language
+  const lang = ttsTargetLang.toLowerCase();
+
+  // Try to find a voice that matches the exact language tag
+  let voice = availableVoices.find(v => v.lang.toLowerCase() === lang);
+  if (voice) return voice;
+
+  // For Hindi, prefer any voice with 'hi' or 'india' in the name/lang
+  if (lang.startsWith('hi')) {
+    voice = availableVoices.find(v => v.lang.toLowerCase().startsWith('hi')) ||
+            availableVoices.find(v => /india|hindi/i.test(v.name));
+    if (voice) return voice;
   }
-  
-  utterance.onstart = () => {
-    console.log('🎤 Speaking started');
-  };
-  
-  utterance.onend = () => {
-    console.log('🎤 Speaking ended');
-    if (callback) callback();
-  };
-  
-  utterance.onerror = (event) => {
-    console.error('Speech error:', event.error);
-    if (callback) callback();
-  };
-  
-  currentUtterance = utterance;
-  synth.speak(utterance);
+
+  // For Indian English, prefer en-IN voices
+  if (lang.startsWith('en')) {
+    voice = availableVoices.find(v => v.lang.toLowerCase().includes('en-in')) ||
+            availableVoices.find(v => /india|indian/i.test(v.name));
+    if (voice) return voice;
+  }
+
+  // Fall back to a female voice if available
+  voice = availableVoices.find(v => /female/i.test(v.name));
+  if (voice) return voice;
+
+  // Otherwise return first available voice
+  return availableVoices[0];
+}
+
+function speakText(prefix, messageText) {
+  return new Promise(async (resolve) => {
+    if (!synth) {
+      console.error('Speech Synthesis API not supported');
+      resolve();
+      return;
+    }
+
+    let finalText = messageText;
+    if (ttsTranslateToHindi && ttsTargetLang.startsWith('hi')) {
+      finalText = await translateToHindi(messageText);
+    }
+
+    const utterance = new SpeechSynthesisUtterance(`${prefix}${finalText}`);
+    utterance.rate = ttsRate;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    utterance.lang = ttsTargetLang;
+
+    const preferredVoice = getPreferredVoice();
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+
+    utterance.onstart = () => {
+      console.log('🎤 Speaking started');
+      currentUtterance = utterance;
+    };
+
+    utterance.onend = () => {
+      console.log('🎤 Speaking ended');
+      currentUtterance = null;
+      resolve();
+    };
+
+    utterance.onerror = (event) => {
+      console.error('Speech error:', event.error);
+      currentUtterance = null;
+      resolve();
+    };
+
+    synth.speak(utterance);
+  });
 }
 
 // ===== KEYBOARD AND LOAD EVENTS =====
@@ -1670,28 +1796,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
-  // Initialize language selector
-  const langItems = document.querySelectorAll('.language-item-top');
-  langItems.forEach(item => {
-    if (item.dataset.lang === 'en') {
-      item.classList.add('active');
-    }
-    item.addEventListener('click', function() {
-      selectTTSLanguage(this.dataset.lang);
+  // Initialize TTS language selector
+  const ttsLangSelect = document.getElementById('ttsLanguageSelect');
+  if (ttsLangSelect) {
+    ttsLangSelect.value = ttsTargetLang;
+    ttsLangSelect.addEventListener('change', (event) => {
+      setTtsLanguage(event.target.value);
     });
-  });
-  
-  // Hide language selector on page load
-  const langSelector = document.getElementById('languageSelectorTop');
-  if (langSelector) {
-    langSelector.style.display = 'none';
   }
-  
-  // Set initial language flag
-  const flagElement = document.getElementById('currentLanguageFlag');
-  if (flagElement) {
-    flagElement.textContent = languageFlagMap['en'];
-  }
+
+  // Ensure the initial voice set matches the default language
+  setTtsLanguage(ttsTargetLang);
   
   // Initialize with welcome message
   addMessage("👋 Hey there! Welcome to your travel buddy! 🌍", false);

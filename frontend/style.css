@@ -106,6 +106,21 @@ body {
     font-size: 16px;
 }
 
+.tts-lang-select {
+    background: rgba(255, 255, 255, 0.18);
+    border: none;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 18px;
+    font-size: 12px;
+    cursor: pointer;
+    outline: none;
+    height: 36px;
+}
+
+.tts-lang-select option {
+    color: #000;
+}
 .header-btn:hover {
     background: rgba(255, 255, 255, 0.25);
     transform: scale(1.05);
