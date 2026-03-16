@@ -20,24 +20,11 @@
                 </div>
             </div>
             <div class="header-right">
-                <button class="speaker-btn-header" onclick="toggleLanguageSelector()" title="Text to Speech - Click to select language">
+                <button class="header-btn" id="speakerBtn" onclick="toggleTextToSpeech()" title="Read messages aloud">
                     <i class="fas fa-volume-up"></i>
-                    <span id="currentLanguageFlag">🇺🇸</span>
                 </button>
                 <button class="header-btn" onclick="toggleMenu()">
                     <i class="fas fa-ellipsis-v"></i>
-                </button>
-            </div>
-        </div>
-        
-        <!-- Language Selector Dropdown (shown below header) -->
-        <div id="languageSelectorTop" class="language-selector-top" style="display: none;">
-            <div class="language-grid-top">
-                <button class="language-item-top" data-lang="en" onclick="selectTTSLanguage('en')" title="English">
-                    🇺🇸 English
-                </button>
-                <button class="language-item-top" data-lang="hi" onclick="selectTTSLanguage('hi')" title="Hindi">
-                    🇮🇳 हिन्दी
                 </button>
             </div>
         </div>

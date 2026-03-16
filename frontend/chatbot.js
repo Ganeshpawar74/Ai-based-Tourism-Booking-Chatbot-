@@ -260,14 +260,6 @@ function addMessage(text, isUser) {
   setTimeout(() => {
     chatbox.scrollTop = chatbox.scrollHeight;
   }, 50);
-  
-  // Auto-read bot messages when TTS is enabled
-  if (!isUser && isAutoReadingEnabled) {
-    setTimeout(() => {
-      console.log('Auto-reading new bot message...');
-      convertToSpeech(text, false);
-    }, 500);
-  }
 }
 
 // ===== STEP 1: PLACE SELECTION (CLICKABLE BUTTONS - NAMES ONLY) =====
@@ -1538,221 +1530,135 @@ function toggleMenu() {
   console.log('Menu toggled');
 }
 
-// ===== TEXT-TO-SPEECH FUNCTIONS =====
-let currentTTSLanguage = 'en'; // Default language is English
-let lastMessageText = ''; // Store last bot message for TTS on demand
-let isAutoReadingEnabled = false; // Flag to enable auto-reading
+// ===== TEXT-TO-SPEECH FUNCTIONS (Web Speech API) =====
+let isSpeaking = false;
+let currentUtterance = null;
 
-// Language to flag mapping
-const languageFlagMap = {
-  'en': '🇺🇸',
-  'hi': '🇮🇳',
-  'es': '🇪🇸',
-  'fr': '🇫🇷',
-  'de': '🇩🇪',
-  'it': '🇮🇹',
-  'pt': '🇵🇹',
-  'ja': '🇯🇵',
-  'zh': '🇨🇳',
-  'ar': '🇸🇦'
-};
+// Check if browser supports Web Speech API
+const synth = window.speechSynthesis;
 
-function toggleLanguageSelector() {
-  const selector = document.getElementById('languageSelectorTop');
-  if (!selector) {
-    console.error('Language selector not found');
-    return;
-  }
+function toggleTextToSpeech() {
+  const speakerBtn = document.getElementById('speakerBtn');
   
-  if (selector.style.display === 'none' || selector.style.display === '') {
-    selector.style.display = 'block';
+  if (isSpeaking) {
+    // Stop speaking
+    synth.cancel();
+    isSpeaking = false;
+    speakerBtn.classList.remove('active');
+    console.log('🔇 Text-to-speech stopped');
   } else {
-    selector.style.display = 'none';
+    // Start reading all messages
+    isSpeaking = true;
+    speakerBtn.classList.add('active');
+    console.log('🔊 Starting text-to-speech');
+    readAllMessages();
   }
 }
 
-function selectTTSLanguage(lang) {
-  currentTTSLanguage = lang;
-  isAutoReadingEnabled = true; // Enable auto-reading
-  
-  // Update active state
-  const langItems = document.querySelectorAll('.language-item-top');
-  langItems.forEach(item => {
-    if (item.dataset.lang === lang) {
-      item.classList.add('active');
-    } else {
-      item.classList.remove('active');
-    }
-  });
-  
-  // Update flag in header
-  const flagElement = document.getElementById('currentLanguageFlag');
-  if (flagElement) {
-    flagElement.textContent = languageFlagMap[lang] || '🇺🇸';
-  }
-  
-  // Hide selector
-  document.getElementById('languageSelectorTop').style.display = 'none';
-  
-  // Read all existing bot messages
-  setTimeout(() => {
-    readAllBotMessages();
-  }, 300);
-}
-
-// Collect all bot messages from chat
-function getAllBotMessages() {
+function readAllMessages() {
   const messages = [];
-  const messageElements = document.querySelectorAll('.message.bot');
+  const messageElements = document.querySelectorAll('.message');
   
   messageElements.forEach(msgDiv => {
     const contentDiv = msgDiv.querySelector('.message-content');
     if (contentDiv) {
       const text = contentDiv.innerText || contentDiv.textContent;
       if (text && text.trim()) {
-        messages.push(text.trim());
+        messages.push({
+          text: text.trim(),
+          isUser: msgDiv.classList.contains('user')
+        });
       }
     }
   });
   
-  return messages;
-}
-
-// Read all bot messages sequentially
-async function readAllBotMessages() {
-  const messages = getAllBotMessages();
-  
   if (messages.length === 0) {
-    console.log('No messages to read');
+    alert('No messages to read');
+    isSpeaking = false;
+    document.getElementById('speakerBtn').classList.remove('active');
     return;
   }
   
-  console.log(`Reading ${messages.length} bot messages in ${currentTTSLanguage}...`);
-  
-  for (let i = 0; i < messages.length; i++) {
-    try {
-      await convertToSpeech(messages[i], true); // true means wait for completion
-      // Add a small delay between messages
-      await new Promise(resolve => setTimeout(resolve, 500));
-    } catch (error) {
-      console.error(`Error reading message ${i + 1}:`, error);
-    }
-  }
-  
-  console.log('✅ Finished reading all messages');
+  console.log(`📢 Reading ${messages.length} messages...`);
+  readMessageSequentially(messages, 0);
 }
 
-async function convertToSpeech(text, waitForCompletion = false) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      if (!text || text.trim() === '') {
-        console.log('No text to convert to speech');
-        resolve();
-        return;
-      }
-      
-      console.log(`Converting to speech (${currentTTSLanguage}): ${text.substring(0, 50)}...`);
-      
-      const response = await fetch(`${API_BASE_URL}/text-to-speech`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: text.substring(0, 2000), // Increased to 2000 chars for longer messages
-          language: currentTTSLanguage
-        })
-      });
-      
-      console.log('TTS Response Status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('TTS Error Response:', errorText);
-        throw new Error(`Server error: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('TTS Response received, audio data length:', data.audio ? data.audio.length : 0);
-      
-      if (data.error) {
-        throw new Error(data.error);
-      }
-      
-      // Play the audio
-      if (data.audio) {
-        playAudio(data.audio, waitForCompletion, resolve);
-      } else {
-        throw new Error('No audio data received from server');
-      }
-      
-    } catch (error) {
-      console.error('TTS Error:', error);
-      resolve(); // Continue with next message even if one fails
-    }
+function readMessageSequentially(messages, index) {
+  if (!isSpeaking || index >= messages.length) {
+    isSpeaking = false;
+    document.getElementById('speakerBtn').classList.remove('active');
+    console.log('✅ Finished reading all messages');
+    return;
+  }
+  
+  const message = messages[index];
+  recognizer = null;
+  const prefix = message.isUser ? '👤 User said: ' : '🤖 Bot: ';
+  const textToRead = cleanTextForSpeech(message.text);
+  
+  console.log(`📖 Reading message ${index + 1}/${messages.length}`);
+  
+  speakText(prefix + textToRead, () => {
+    // Move to next message after this one finishes
+    setTimeout(() => {
+      readMessageSequentially(messages, index + 1);
+    }, 500);
   });
 }
 
-function playAudio(audioBase64, waitForCompletion = false, callback = null) {
-  try {
-    // Create audio element
-    const audio = new Audio();
-    
-    // Set up the audio data URL
-    try {
-      audio.src = 'data:audio/mpeg;base64,' + audioBase64;
-    } catch (e) {
-      console.error('Error setting audio src:', e);
-    }
-    
-    console.log('Playing audio, duration will be known after loading...');
-    
-    // Track when audio ends
-    const onAudioEnd = () => {
-      console.log('Audio finished playing');
-      audio.removeEventListener('ended', onAudioEnd);
-      audio.removeEventListener('error', onAudioError);
-      
-      if (waitForCompletion && callback) {
-        callback();
-      }
-    };
-    
-    const onAudioError = (error) => {
-      console.error('Audio playback error:', error);
-      audio.removeEventListener('ended', onAudioEnd);
-      audio.removeEventListener('error', onAudioError);
-      
-      if (waitForCompletion && callback) {
-        callback();
-      }
-    };
-    
-    audio.addEventListener('ended', onAudioEnd);
-    audio.addEventListener('error', onAudioError);
-    
-    // Set volume
-    audio.volume = 1.0;
-    
-    // Play audio
-    const playPromise = audio.play();
-    if (playPromise !== undefined) {
-      playPromise.then(() => {
-        console.log('Audio playback started successfully');
-      }).catch(error => {
-        console.error('Audio play promise rejected:', error);
-        if (waitForCompletion && callback) {
-          callback();
-        }
-      });
-    }
-    
-  } catch (error) {
-    console.error('Audio setup error:', error);
-    if (waitForCompletion && callback) {
-      callback();
-    }
+function cleanTextForSpeech(text) {
+  // Remove HTML tags
+  let cleaned = text.replace(/<[^>]*>/g, ' ');
+  // Remove extra whitespace
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+  // Remove emojis and special Unicode characters
+  cleaned = cleaned.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F700}-\u{1F77F}]|[\u{1F780}-\u{1F7FF}]|[\u{1F800}-\u{1F8FF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA00}-\u{1FA6F}]|[\u{1FA70}-\u{1FAFF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '');
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+  return cleaned;
+}
+
+function speakText(text, callback = null) {
+  if (!synth) {
+    console.error('Speech Synthesis API not supported');
+    if (callback) callback();
+    return;
   }
+  
+  // Cancel any ongoing speech
+  synth.cancel();
+  
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 0.9;
+  utterance.pitch = 1.0;
+  utterance.volume = 1.0;
+  utterance.lang = 'en-IN'; // Default to Indian English for tourism context
+  
+  // Get available voices
+  const voices = synth.getVoices();
+  if (voices.length > 0) {
+    // Prefer female voice if available
+    const femaleVoice = voices.find(v => v.name.includes('Female')) || 
+                        voices.find(v => v.name.includes('female')) || 
+                        voices[1] || voices[0];
+    utterance.voice = femaleVoice;
+  }
+  
+  utterance.onstart = () => {
+    console.log('🎤 Speaking started');
+  };
+  
+  utterance.onend = () => {
+    console.log('🎤 Speaking ended');
+    if (callback) callback();
+  };
+  
+  utterance.onerror = (event) => {
+    console.error('Speech error:', event.error);
+    if (callback) callback();
+  };
+  
+  currentUtterance = utterance;
+  synth.speak(utterance);
 }
 
 // ===== KEYBOARD AND LOAD EVENTS =====
