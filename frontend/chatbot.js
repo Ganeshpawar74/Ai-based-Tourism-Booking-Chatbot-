@@ -1461,10 +1461,11 @@ function displayQRCode(qrCodeBase64) {
   summaryDiv.innerHTML = summaryHTML;
   summaryDiv.style.cssText = `
     background: #f0f8f7;
-    padding: 12px;
+    padding: 10px;
     border-radius: 8px;
     border-left: 4px solid #128C7E;
-    margin-bottom: 15px;
+    margin-bottom: 12px;
+    font-size: 13px;
   `;
   contentDiv.appendChild(summaryDiv);
   
@@ -1480,18 +1481,19 @@ function displayQRCode(qrCodeBase64) {
     justify-content: center;
     align-items: center;
     background: #ffffff;
-    padding: 15px;
+    padding: 12px;
     border-radius: 12px;
     border: 2px solid #128C7E;
+    margin: 10px 0;
   `;
   
   const qrImage = document.createElement('img');
   qrImage.src = qrCodeBase64;
   qrImage.alt = 'Booking QR Code';
   qrImage.style.cssText = `
-    max-width: 250px;
-    width: 250px;
-    height: 250px;
+    max-width: 100%;
+    width: 180px;
+    height: 180px;
     border-radius: 6px;
     box-shadow: 0 2px 8px rgba(18, 140, 126, 0.2);
   `;
@@ -1500,7 +1502,7 @@ function displayQRCode(qrCodeBase64) {
   contentDiv.appendChild(qrContainer);
   
   const instrDiv = document.createElement('div');
-  instrDiv.innerHTML = '<div style="margin-top: 12px; font-size: 13px; color: #074e3e; text-align: center; background: #e8f5e9; padding: 10px; border-radius: 6px;"><b>📸 Important:</b> Screenshot this QR code and show it at the venue for entry.</div>';
+  instrDiv.innerHTML = '<div style="margin-top: 10px; font-size: 12px; color: #074e3e; text-align: center; background: #e8f5e9; padding: 8px; border-radius: 6px;"><b>📸 Important:</b> Screenshot this QR code and show it at the venue for entry.</div>';
   contentDiv.appendChild(instrDiv);
   
   wrapper.appendChild(contentDiv);
