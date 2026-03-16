@@ -1,5 +1,4 @@
 import razorpay
-import pkg_resources
 import hmac
 import hashlib
 import logging
